@@ -50,21 +50,34 @@ digest has its own mail configuration.
 
 ### 1. Install and add costs
 
-In a Drupal project with a supported Commerce version, use the exact Composer command shown for
-the verified release on the [downloads page](https://commerce.decionis.com/downloads). Composer
-resolves the PHP client and module dependencies. Then enable the module and apply the recipe:
+In a Drupal project with a supported Commerce version, install the module with Composer, which
+resolves the PHP client and module dependencies:
 
 ```bash
-drush en decionis_commerce -y
+composer require 'drupal/decionis:^0.1@beta'
+```
+
+Projects built from `drupal/recommended-project` already use `https://packages.drupal.org/8`. If
+yours does not, first run `composer config repositories.drupal composer https://packages.drupal.org/8`.
+The [downloads page](https://commerce.decionis.com/downloads) has the ZIP alternative, its checksum
+and provenance.
+
+Then enable the module and apply the recipe. A global `drush` works the same as `vendor/bin/drush`
+where it is installed.
+
+```bash
+vendor/bin/drush en decionis_commerce -y
 cd web
 php core/scripts/drupal recipe modules/contrib/decionis/recipes/decionis_commerce
+cd ..
+vendor/bin/drush cr
 ```
 
 If Commerce and Drush are not installed yet, first run
 `composer require 'drupal/commerce:^3.3.13' drush/drush`. Existing Commerce 2 stores on Drupal 10
 can keep Commerce 2.41 or later. `web` is the Drupal root in these examples; some projects use
-`docroot`. Use `vendor/bin/drush` if Drush is not on your PATH. After upgrading an existing
-installation, run `drush updb -y` and `drush cr` from the project root.
+`docroot`. After upgrading an existing installation, run `vendor/bin/drush updb -y` and
+`vendor/bin/drush cr` from the project root.
 
 When upgrading from the private ZIP instructions, remove the old Composer artifact repository
 entry with `composer config --unset repositories.decionis` before requiring the public beta.
@@ -83,7 +96,7 @@ costs** at `/admin/commerce/decionis/cost-import`. The UI accepts up to 2 MiB an
 all rows before starting its Batch run, and reports any save failure. The Drush alternative remains:
 
 ```bash
-drush decionis:cost-import costs.csv
+vendor/bin/drush decionis:cost-import costs.csv
 ```
 
 ### 2. Run the Store X-ray
@@ -192,7 +205,7 @@ load after evaluation. No nudge is delivered for a rolled-back save.
 The opt-in weekly digest is configured in settings: enabled state, permitted recipients and day.
 Drupal sends it only to selected active users who still have _administer decionis_. It contains
 aggregate currency totals and links to the per-action controls, without customer data or coupon
-codes. Schedule `drush cron` or the protected cron URL independently of page traffic, and configure Drupal mail for delivery. On hosts where response completion cannot be confirmed, page-triggered automatic cron leaves this work queued so it cannot delay a save or checkout.
+codes. Schedule `vendor/bin/drush cron` or the protected cron URL independently of page traffic, and configure Drupal mail for delivery. On hosts where response completion cannot be confirmed, page-triggered automatic cron leaves this work queued so it cannot delay a save or checkout.
 
 **Protection checklist** at `/admin/commerce/decionis/checklist` explains seven weighted checks:
 connection, active hooks, cost coverage, tuned limits, an enforced action, payment-key custody and
@@ -252,7 +265,7 @@ codes. API keys and site credentials are excluded from configuration exports and
 ## Optional admin tools and AgentSafe
 
 The **Local sandbox** at `/admin/commerce/decionis/sandbox` runs the same synthetic-store report
-as `drush decionis:sandbox --authority=local`, through the Batch API. It checks hook wiring and
+as `vendor/bin/drush decionis:sandbox --authority=local`, through the Batch API. It checks hook wiring and
 labels every result **sandbox, not production evidence**. Its ephemeral signatures prove only
 that the local demo path works. The status report also identifies inactive hooks.
 
@@ -267,7 +280,7 @@ payment key under a separate service identity. The admin **AgentSafe dry-run pre
 Installation and key movement remain Drush/host operations:
 
 ```bash
-drush decionis:gateway-setup --dry-run
+vendor/bin/drush decionis:gateway-setup --dry-run
 ```
 
 The setup verifies service readiness before changing custody. Root uses the packaged dynamic-user
@@ -285,7 +298,7 @@ Cron checks `/_agentsafe/readyz`. An outage after key movement raises a critical
 mails administrators through Drupal. It keeps the protected custody until an explicit rollback:
 
 ```bash
-drush decionis:gateway-rollback
+vendor/bin/drush decionis:gateway-rollback
 ```
 
 Where Drupal can read the key, rollback restores access through a private Key file provider and
@@ -312,20 +325,20 @@ AgentSafe cannot expand that refund API scope or make a payout a Drupal refund r
 
 ## Drush and troubleshooting
 
-| Command                                    | Purpose                                                         |
-| ------------------------------------------ | --------------------------------------------------------------- |
-| `drush decionis:sandbox --authority=local` | Offline synthetic-store check, rolled back; add `--json` for CI |
-| `drush decionis:replay --days=90`          | Remote Shadow replay of existing orders, refunds and promotions |
-| `drush decionis:replay --authority=local`  | Local estimate; creates no dashboard decision rows              |
-| `drush decionis:cost-import FILE.csv`      | Import variation costs from `sku,cost`                          |
-| `drush decionis:gateway-setup --dry-run`   | Print the host plan and redacted files                          |
-| `drush decionis:gateway-rollback`          | Restore supported local key access or print host recovery steps |
+| Command                                               | Purpose                                                         |
+| ----------------------------------------------------- | --------------------------------------------------------------- |
+| `vendor/bin/drush decionis:sandbox --authority=local` | Offline synthetic-store check, rolled back; add `--json` for CI |
+| `vendor/bin/drush decionis:replay --days=90`          | Remote Shadow replay of existing orders, refunds and promotions |
+| `vendor/bin/drush decionis:replay --authority=local`  | Local estimate; creates no dashboard decision rows              |
+| `vendor/bin/drush decionis:cost-import FILE.csv`      | Import variation costs from `sku,cost`                          |
+| `vendor/bin/drush decionis:gateway-setup --dry-run`   | Print the host plan and redacted files                          |
+| `vendor/bin/drush decionis:gateway-rollback`          | Restore supported local key access or print host recovery steps |
 
 The sandbox also supports `--authority=hosted` with `DECIONIS_SANDBOX_API_KEY` and
 `DECIONIS_SANDBOX_ORG_ID` (or lower-case Key entries), and `--authority=account` for the site's
 workspace in Shadow. `--policy=<version>` pins a published policy for hosted/account runs.
 
-- **Pending Shadow or replay rows:** run `drush cron` or the protected cron URL and inspect the site queue.
+- **Pending Shadow or replay rows:** run `vendor/bin/drush cron` or the protected cron URL and inspect the site queue.
   The status report warns when queued Shadow checks are more than one hour old; reading the report
   does no queue or network work. An unavailable API cannot produce a signed verdict. Local X-ray still works.
 - **Copy banner:** reconnect the new site or disconnect its local copy. Do not reuse production
@@ -334,7 +347,7 @@ workspace in Shadow. `--policy=<version>` pins a published policy for hosted/acc
   default port; configure Drupal's trusted reverse proxy settings when needed.
 - **Enforce unavailable:** the server has not granted a current enforcement entitlement. The plan
   notice explains it; changing local config cannot override it.
-- **Inactive hooks:** rebuild caches (`drush cr`) and rerun the local sandbox. Check custom overrides.
+- **Inactive hooks:** rebuild caches (`vendor/bin/drush cr`) and rerun the local sandbox. Check custom overrides.
 - **Synchronous DNS warning:** use libcurl with threaded/c-ares resolution or a local caching
   resolver so the Enforce budget covers DNS appropriately.
 - **Proof unavailable or invalid:** use the inline result and download. The

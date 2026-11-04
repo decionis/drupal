@@ -62,6 +62,26 @@ protection score links missing setup steps to their fixes. Printable X-ray and S
 include CSV, separate currencies, coverage and top items. Aggregate reports are unsigned; Shadow
 reports list available individual Dossier references and verification links.
 
+## Installation
+
+In a Drupal project with a supported Commerce version, from the project's root folder:
+
+```bash
+composer require 'drupal/decionis:^0.1@beta'
+vendor/bin/drush en decionis_commerce -y
+cd web
+php core/scripts/drupal recipe modules/contrib/decionis/recipes/decionis_commerce
+cd ..
+vendor/bin/drush cr
+```
+
+Projects built from `drupal/recommended-project` already use `https://packages.drupal.org/8`. If
+yours does not, first run `composer config repositories.drupal composer https://packages.drupal.org/8`.
+`composer require drush/drush` adds `vendor/bin/drush` to a project; a global `drush` works the same
+where it is installed. Use `docroot` instead of `web` if that is your Drupal root. The [downloads page](https://commerce.decionis.com/downloads)
+has the ZIP alternative, its checksum and provenance, and the
+[Getting Started guide](https://commerce.decionis.com/downloads/drupal/getting-started).
+
 ## Scope and boundaries
 
 The `decionis_commerce` module covers supported refund forms, variation price validation, promotions/coupons,
