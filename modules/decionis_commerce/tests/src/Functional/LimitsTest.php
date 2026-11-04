@@ -49,7 +49,8 @@ final class LimitsTest extends CommerceBrowserTestBase {
     $this->assertSession()->fieldValueEquals('decionis_limits[NGN][refund_limit]', '150000');
     $this->assertSession()->pageTextContains('1 of 2 cumulative refunded payments are at or below NGN 150,000.00');
     $this->assertSession()->pageTextContains('Fewer than 20 observations');
-    $this->assertSession()->pageTextContains('Publishing them to your connected workspace is not available yet');
+    $this->assertSession()->pageTextContains('Saving also requests publication to your connected workspace');
+    $this->assertSession()->pageTextContains('Not yet published');
 
     // Use the same POST and triggering element as Drupal's number-field AJAX.
     // No browser JavaScript or external service is needed to verify its result.

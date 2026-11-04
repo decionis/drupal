@@ -1,0 +1,20 @@
+[
+  {
+    "name": "currency_order",
+    "input_json": "{\"USD\":{\"refund_limit\":500,\"margin_floor\":12,\"stacking_ceiling\":30,\"repeat_limit\":3},\"NGN\":{\"refund_limit\":150000,\"margin_floor\":12,\"stacking_ceiling\":30,\"repeat_limit\":3}}",
+    "canonical_json": "{\"NGN\":{\"margin_floor\":12,\"refund_limit\":150000,\"repeat_limit\":3,\"stacking_ceiling\":30},\"USD\":{\"margin_floor\":12,\"refund_limit\":500,\"repeat_limit\":3,\"stacking_ceiling\":30}}",
+    "sha256": "sha256:da5d6b565b164ae462b842dfa4deaaae060c23e0fb32427216e2307d72022d77"
+  },
+  {
+    "name": "small_numbers_and_negative_zero",
+    "input_json": "{\"NGN\":{\"refund_limit\":0.0000001,\"margin_floor\":-0,\"stacking_ceiling\":1e-6,\"repeat_limit\":3}}",
+    "canonical_json": "{\"NGN\":{\"margin_floor\":0,\"refund_limit\":1e-7,\"repeat_limit\":3,\"stacking_ceiling\":0.000001}}",
+    "sha256": "sha256:4cd1cc6b068070cb1eee028d7d40e4c00304dd97f9c056501b203afa64f724ba"
+  },
+  {
+    "name": "finite_precision_and_bounds",
+    "input_json": "{\"EUR\":{\"repeat_limit\":1000000000,\"stacking_ceiling\":0.30000000000000004,\"refund_limit\":1000000000000,\"margin_floor\":12.3456789012345}}",
+    "canonical_json": "{\"EUR\":{\"margin_floor\":12.3456789012345,\"refund_limit\":1000000000000,\"repeat_limit\":1000000000,\"stacking_ceiling\":0.30000000000000004}}",
+    "sha256": "sha256:043c4e9c1d5e1c20e51ca1e8f0bf7384c73a14b29012170e46628868f5323962"
+  }
+]

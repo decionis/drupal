@@ -7,8 +7,11 @@ namespace Drupal\Tests\decionis_commerce\Functional;
 use Drupal\commerce_payment\Entity\PaymentGateway;
 use Drupal\decionis\Connect\Binding;
 use Drupal\decionis\Entity\Decision;
+use Drupal\decionis\Gate\Credentials;
 use Drupal\decionis\Gate\Settings;
 use Drupal\Tests\commerce\Functional\CommerceBrowserTestBase;
+use Drupal\Tests\decionis\Support\ConnectApi;
+use Drupal\Tests\decionis\Support\Loopback;
 
 /**
  * An action-specific POST requires current entitlement and real hook coverage.
@@ -21,6 +24,19 @@ final class EnforcementTest extends CommerceBrowserTestBase {
    * {@inheritdoc}
    */
   protected static $modules = ['commerce_payment', 'commerce_promotion', 'commerce_checkout', 'commerce_order', 'commerce_product', 'decionis', 'decionis_commerce', 'decionis_fincra_test'];
+
+  /**
+   * The synthetic workspace authority used by real browser submissions.
+   */
+  private ?Loopback $server = NULL;
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function tearDown(): void {
+    $this->server?->stop();
+    parent::tearDown();
+  }
 
   /**
    * {@inheritdoc}
@@ -85,17 +101,101 @@ final class EnforcementTest extends CommerceBrowserTestBase {
   public function testFincraOnlyShowsCoverageAndSaferFirstActions(): void {
     PaymentGateway::create(['id' => 'fincra', 'label' => 'Fincra', 'plugin' => 'fincra_standard', 'status' => TRUE, 'configuration' => ['mode' => 'test']])->save();
     \Drupal::state()->set(Binding::STATE, ['org_id' => 'synthetic-workspace', 'api_key' => 'synthetic-key-reference']);
-    \Drupal::state()->set(Settings::ENTITLEMENT, ['enforcement' => TRUE, 'state' => 'trial']);
+    \Drupal::state()->set(Settings::ENTITLEMENT, ['enforcement' => TRUE, 'state' => 'paid']);
     $this->drupalGet('/admin/commerce/decionis/decisions');
     $session = $this->assertSession();
-    $session->pageTextContains('Fincra refunds happen outside Drupal');
+    $session->pageTextContains('Fincra has no ordinary refund operation in Drupal');
+    $session->pageTextContains('separate customer payout outside Drupal');
     $session->pageTextContains('Start with orders, prices or promotions.');
     foreach (['order_acceptance', 'price_change', 'promotion_change'] as $action) {
       $session->linkByHrefExists('/admin/commerce/decionis/enforce/' . $action);
     }
     $this->drupalGet('/admin/commerce/decionis/enforce/refund_request');
     $session->elementExists('css', '#edit-submit[disabled]');
-    $session->pageTextContains('cannot stop provider-dashboard refunds');
+    $session->pageTextContains('not automatically reflected as Drupal refunds');
+    $session->pageTextContains('cannot be stopped here');
+  }
+
+  /**
+   * Only a permitted, valid POST starts a trial and enables one action.
+   */
+  public function testAvailableTrialRequiresAuthorizedPost(): void {
+    $this->availableTrial();
+    $this->config('decionis.settings')->set('mode', 'enforce')->set('actions.refund_request', 'enforce')->set('actions.agent_tool', 'enforce')->save();
+    $this->drupalGet('/admin/commerce/decionis/decisions');
+    $this->assertSession()->linkByHrefExists('/admin/commerce/decionis/enforce/price_change');
+    $this->assertSession()->pageTextContains('Actions currently run in Shadow');
+    $this->drupalGet('/admin/commerce/decionis/enforce/price_change');
+    $this->assertSession()->pageTextContains('free 14-day enforcement trial');
+    $this->assertSame([], $this->server->stats()['calls'], 'GET does not start the trial');
+    $this->assertSession()->elementExists('css', 'input[name="form_token"]')->setValue('invalid-token');
+    $this->submitForm([], 'Enforce this one');
+    $this->assertSame([], $this->server->stats()['calls'], 'an invalid form token makes no request');
+
+    $this->drupalLogin($this->drupalCreateUser(['view decionis decisions']));
+    $this->drupalGet('/admin/commerce/decionis/enforce/price_change');
+    $this->assertSession()->statusCodeEquals(403);
+    $this->assertSame([], $this->server->stats()['calls']);
+    $this->drupalLogin($this->adminUser);
+    $this->drupalGet('/admin/commerce/decionis/enforce/price_change');
+    $this->submitForm([], 'Enforce this one');
+    $this->assertSession()->pageTextContains('Price changes now uses Enforce.');
+    $settings = \Drupal::service(Settings::class);
+    $this->assertSame('enforce', $settings->mode('price_change'));
+    foreach (['refund_request', 'promotion_change', 'order_acceptance', 'inventory_mutation', 'agent_tool'] as $action) {
+      $this->assertSame('shadow', $settings->mode($action), $action);
+    }
+    $calls = $this->server->stats()['calls'];
+    $this->assertCount(1, $calls);
+    $this->assertSame('/v1/drupal/entitlement/trial', $calls[0]['path']);
+    $end = $settings->entitlement()['ends_at'];
+    $this->drupalGet('/admin/commerce/decionis/enforce/price_change');
+    $this->submitForm([], 'Enforce this one');
+    $this->assertCount(1, $this->server->stats()['calls']);
+    $this->assertSame($end, $settings->entitlement()['ends_at']);
+  }
+
+  /**
+   * The trial confirmation cannot be replayed after a connection change.
+   */
+  public function testAvailableTrialConfirmationStaysWithItsConnection(): void {
+    $this->availableTrial();
+    $this->drupalGet('/admin/commerce/decionis/enforce/price_change');
+    $record = \Drupal::state()->get(Binding::STATE);
+    $record['generation'] = 'synthetic-new-connection';
+    \Drupal::state()->set(Binding::STATE, $record);
+    $entitlement = \Drupal::state()->get(Settings::ENTITLEMENT);
+    $entitlement['connection_id'] = \Drupal::service(Settings::class)->connectionIdentity();
+    \Drupal::state()->set(Settings::ENTITLEMENT, $entitlement);
+    $this->submitForm([], 'Enforce this one');
+    $this->assertSame([], $this->server->stats()['calls']);
+    $this->assertSame('shadow', \Drupal::service(Settings::class)->mode('price_change'));
+  }
+
+  /**
+   * Starting a trial never bypasses the Fincra refund coverage restriction.
+   */
+  public function testAvailableTrialDoesNotEnableFincraRefunds(): void {
+    $this->availableTrial();
+    PaymentGateway::create(['id' => 'fincra', 'label' => 'Fincra', 'plugin' => 'fincra_standard', 'status' => TRUE, 'configuration' => ['mode' => 'test']])->save();
+    $this->drupalGet('/admin/commerce/decionis/enforce/refund_request');
+    $this->assertSession()->elementExists('css', '#edit-submit[disabled]');
+    $this->assertSession()->pageTextContains('separate customer payout outside Drupal');
+    $this->assertSession()->pageTextContains('These payouts are not automatically reflected as Drupal refunds and cannot be stopped here.');
+    $this->assertSame([], $this->server->stats()['calls']);
+  }
+
+  /**
+   * Sets up a real synthetic key and an available trial on loopback only.
+   */
+  private function availableTrial(): void {
+    $this->server = new Loopback('trial');
+    $this->config('decionis.settings')->set('connect_url', $this->server->url)->set('api_base_url', $this->server->url)->save();
+    \Drupal::service(Credentials::class)->store('api_key', Credentials::API_KEY, 'Synthetic trial key', ConnectApi::API_KEY);
+    $record = \Drupal::state()->get(Binding::STATE);
+    $record['org_id'] = ConnectApi::ORG;
+    \Drupal::state()->set(Binding::STATE, $record);
+    \Drupal::state()->set(Settings::ENTITLEMENT, ['state' => 'trial_available', 'enforcement' => FALSE, 'connection_id' => \Drupal::service(Settings::class)->connectionIdentity()]);
   }
 
 }

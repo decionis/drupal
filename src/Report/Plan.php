@@ -30,7 +30,10 @@ final class Plan {
     $state = (string) ($entitlement['state'] ?? 'unknown');
     $ends = $entitlement['ends_at'] ?? NULL;
     $days = is_string($ends) && strtotime($ends) !== FALSE ? max(0, (int) ceil((strtotime($ends) - time()) / 86400)) : NULL;
-    $text = match ($state) {
+    $available = $this->settings->trialAvailable();
+    $active = $this->settings->enforcementAllowed();
+    $text = match ($available ? 'trial_available' : ($active ? $state : 'expired')) {
+      'trial_available' => $this->t('Your free 14-day enforcement trial starts when you choose “Enforce this one”. Actions currently run in Shadow.'),
       'trial' => $this->t('Free enforcement trial: @days days left.', ['@days' => $days ?? '?']),
       'grace' => $this->t('Payment grace period: @days days left before Shadow.', ['@days' => $days ?? '?']),
       'paid' => $this->t('Build plan: enforcement active.'),

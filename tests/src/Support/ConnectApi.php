@@ -52,7 +52,24 @@ final class ConnectApi implements ClientInterface {
    *
    * @var array<string, mixed>|null
    */
-  public ?array $entitlement = ['enforcement' => TRUE, 'state' => 'trial'];
+  public ?array $entitlement = NULL;
+
+  /**
+   * An optional trial response, including malformed or unavailable responses.
+   */
+  public ?ResponseInterface $trialResponse = NULL;
+
+  /**
+   * Synthetic authorization and idempotency headers of trial requests.
+   *
+   * @var list<array{authorization: string, idempotency_key: string}>
+   */
+  public array $trialHeaders = [];
+
+  /**
+   * Simulates another request after the trial response is already in flight.
+   */
+  public ?\Closure $duringTrial = NULL;
 
   /**
    * When set, what verify answers instead of checking the challenge.
@@ -79,7 +96,9 @@ final class ConnectApi implements ClientInterface {
    */
   public ?\Closure $duringStatus = NULL;
 
-  public function __construct(private readonly ChallengeController $challenges, private readonly bool $reachable = TRUE) {}
+  public function __construct(private readonly ChallengeController $challenges, private readonly bool $reachable = TRUE) {
+    $this->entitlement = ['enforcement' => TRUE, 'state' => 'trial', 'ends_at' => gmdate('c', time() + 14 * 86400)];
+  }
 
   /**
    * {@inheritdoc}
@@ -93,6 +112,7 @@ final class ConnectApi implements ClientInterface {
       '/v1/drupal/connect/verify' => $this->verify($body),
       '/v1/drupal/connect/code' => $this->code($body),
       '/v1/drupal/status' => $this->status(),
+      '/v1/drupal/entitlement/trial' => $this->trial($request),
       '/v1/drupal/disconnect' => self::json(200, ['disconnected' => TRUE]),
       default => self::json(404, ['error' => 'NOT_FOUND']),
     };
@@ -157,6 +177,19 @@ final class ConnectApi implements ClientInterface {
   private function status(): ResponseInterface {
     $response = self::json($this->statusCode, ['org_id' => $this->org, 'entitlement' => $this->entitlement]);
     ($this->duringStatus)?->__invoke();
+    return $response;
+  }
+
+  /**
+   * Starts a workspace trial once and returns the current server-owned state.
+   */
+  private function trial(RequestInterface $request): ResponseInterface {
+    $this->trialHeaders[] = ['authorization' => $request->getHeaderLine('Authorization'), 'idempotency_key' => $request->getHeaderLine('Idempotency-Key')];
+    if ($this->trialResponse === NULL && ($this->entitlement['state'] ?? NULL) === 'trial_available') {
+      $this->entitlement = ['enforcement' => TRUE, 'state' => 'trial', 'ends_at' => gmdate('c', time() + 14 * 86400)];
+    }
+    $response = $this->trialResponse ?? self::json(200, ['org_id' => $this->org, 'entitlement' => $this->entitlement]);
+    ($this->duringTrial)?->__invoke();
     return $response;
   }
 

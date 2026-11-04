@@ -10,6 +10,7 @@ Apply them in this order:
 2. `HeldSecretKey.patch`: let that proxy hold and inject the payment secret key.
 3. `FailedStatus.patch`: treat failed payments as voided authorizations rather than refunds.
 
-These are prepared compatibility changes pending upstream acceptance. They do not
-add an ordinary Fincra refund API. The module README explains Composer patch
+The patches were offered in [Commerce Fincra #3588482](https://git.drupalcode.org/project/commerce_fincra/-/work_items/3588482)
+and await upstream review. Keep applying them until a supported upstream release
+includes the changes. They do not add an ordinary Fincra refund API. The module README explains Composer patch
 installation, provider limitations and the optional AgentSafe host setup.

@@ -17,8 +17,10 @@ use Drupal\decionis\Gate\Credentials;
 use Drupal\decionis\Gate\Settings;
 use Drupal\KernelTests\KernelTestBase;
 use Drupal\key\KeyInterface;
+use Drupal\key\KeyRepositoryInterface;
 use Drupal\Tests\decionis\Support\ConnectApi;
 use Drupal\Tests\decionis\Support\BindingProbe;
+use GuzzleHttp\Psr7\Response;
 
 /**
  * Tests one-step connect.
@@ -65,6 +67,7 @@ final class ConnectTest extends KernelTestBase {
    */
   public function testConnectProvesSiteControlAndStoresCredentialsOutsideConfig(): void {
     $api = new ConnectApi(ChallengeController::create($this->container));
+    $api->org = strtoupper(ConnectApi::ORG);
     $this->assertSame('connected', $this->connector($api)->connect('https://shop.example', 'site-uuid-1', 'Example Shop', 'billing@example.com'));
 
     $this->assertSame(['/v1/drupal/connect/start', '/v1/drupal/connect/verify'], array_column($api->calls, 0));
@@ -186,6 +189,118 @@ final class ConnectTest extends KernelTestBase {
       $this->assertSame('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', $settings->get('org_id'));
       $this->assertSame('free', $settings->entitlement()['state']);
       $this->assertFalse($settings->enforcementAllowed());
+    }
+  }
+
+  /**
+   * An in-flight trial response cannot adopt state after a reconnect.
+   */
+  public function testReconnectDuringTrialKeepsTheNewWorkspaceInShadow(): void {
+    foreach ([200, 503] as $code) {
+      $api = new ConnectApi(ChallengeController::create($this->container));
+      $api->entitlement = ['state' => 'trial_available', 'enforcement' => FALSE];
+      $connector = $this->connector($api);
+      $connector->connect('https://shop.example', 'site-uuid-1', 'Example Shop', 'billing@example.com');
+      $connector->refresh();
+      $settings = $this->container->get(Settings::class);
+      $before = $settings->connectionIdentity();
+      if ($code === 503) {
+        $api->trialResponse = new Response(503, [], '{"error":"UNAVAILABLE"}');
+      }
+      $newEntitlement = NULL;
+      $api->duringTrial = function () use ($api, $connector, $settings, &$newEntitlement): void {
+        $api->org = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+        $api->apiKey = 'dcy_bbbbbbbb_synthetic-new-workspace-key';
+        $api->entitlement = ['state' => 'trial_available', 'enforcement' => FALSE];
+        $connector->connect('https://shop.example', 'site-uuid-1', 'Another Workspace', 'billing@example.com');
+        $connector->refresh();
+        $newEntitlement = $settings->entitlement();
+      };
+      try {
+        $this->assertFalse($connector->startTrial($before));
+      }
+      catch (HttpException $error) {
+        $this->assertSame(503, $error->status);
+      }
+      $this->assertNotSame($before, $settings->connectionIdentity());
+      $this->assertSame($newEntitlement, $settings->entitlement());
+      $this->assertTrue($settings->trialAvailable());
+      $this->assertFalse($settings->enforcementAllowed());
+    }
+  }
+
+  /**
+   * A copied site or a key-read reconnect makes no trial request.
+   */
+  public function testTrialRejectsCopiedAndChangingCredentials(): void {
+    $api = new ConnectApi(ChallengeController::create($this->container));
+    $api->entitlement = ['state' => 'trial_available', 'enforcement' => FALSE];
+    $connector = $this->connector($api);
+    $connector->connect('https://shop.example', 'site-uuid-1', 'Example Shop', 'billing@example.com');
+    $connector->refresh();
+    $settings = $this->container->get(Settings::class);
+    $identity = $settings->connectionIdentity();
+    $state = $this->container->get('state');
+    $record = $state->get(Binding::STATE);
+    $copy = $record;
+    $copy['binding']['host'] = hash('sha256', 'synthetic copied host');
+    $state->set(Binding::STATE, $copy);
+    $this->assertFalse($connector->startTrial($identity));
+    $this->assertSame([], $api->trialHeaders);
+    $state->set(Binding::STATE, $record);
+
+    $key = $this->container->get('key.repository')->getKey(Credentials::API_KEY);
+    $keys = $this->createMock(KeyRepositoryInterface::class);
+    $keys->method('getKey')->willReturnCallback(function () use ($record, $key): ?KeyInterface {
+      $record['generation'] = 'synthetic-key-read-reconnect';
+      $this->container->get('keyvalue')->get('state')->set(Binding::STATE, $record);
+      return $key;
+    });
+    $credentials = new Credentials($keys, $this->container->get('entity_type.manager'), $state, $this->container->get('config.factory'), $this->container->get(Binding::class), $this->container->get('keyvalue'));
+    $connector = new Connector($settings, $credentials, $this->container->get(SiteKey::class), $state, $this->container->get('config.factory'), $this->container->get('module_handler'), $api);
+    $this->assertFalse($connector->startTrial($identity));
+    $this->assertSame([], $api->trialHeaders);
+    $this->assertNotSame($identity, $settings->connectionIdentity());
+  }
+
+  /**
+   * A valid entitlement for another workspace is never adopted from status.
+   */
+  public function testStatusRejectsAnotherWorkspace(): void {
+    $api = new ConnectApi(ChallengeController::create($this->container));
+    $connector = $this->connector($api);
+    $connector->connect('https://shop.example', 'site-uuid-1', 'Example Shop', 'billing@example.com');
+    $connector->refresh();
+    $api->org = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+    try {
+      $connector->refresh();
+      $this->fail('Another workspace entitlement was accepted.');
+    }
+    catch (\UnexpectedValueException $error) {
+      $this->assertSame('DECIONIS_ENTITLEMENT_UNEXPECTED', $error->getMessage());
+    }
+    $this->assertFalse($this->container->get(Settings::class)->enforcementAllowed());
+  }
+
+  /**
+   * An already-active legacy store retains its choices through paid renewal.
+   */
+  public function testExistingPaidSelectionsSurviveRenewal(): void {
+    $api = new ConnectApi(ChallengeController::create($this->container));
+    $this->container->get(Credentials::class)->store('api_key', Credentials::API_KEY, 'Synthetic legacy key', ConnectApi::API_KEY);
+    $state = $this->container->get('state');
+    $record = $state->get(Binding::STATE);
+    $record['org_id'] = ConnectApi::ORG;
+    $state->set(Binding::STATE, $record);
+    $state->set(Settings::ENTITLEMENT, ['state' => 'paid', 'enforcement' => TRUE]);
+    $this->config('decionis.settings')->set('mode', 'enforce')->save();
+    $settings = $this->container->get(Settings::class);
+    $this->assertSame('enforce', $settings->mode('refund_request'));
+    $connector = $this->connector($api);
+    foreach ([['paid', TRUE, 'enforce'], ['expired', FALSE, 'shadow'], ['paid', TRUE, 'enforce']] as [$period, $active, $mode]) {
+      $api->entitlement = ['state' => $period, 'enforcement' => $active];
+      $connector->refresh();
+      $this->assertSame($mode, $settings->mode('refund_request'));
     }
   }
 

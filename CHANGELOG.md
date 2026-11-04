@@ -2,7 +2,7 @@
 
 ## 0.1.2-beta1 — first Drupal.org public beta
 
-Prepared on 2026-11-04 from Revision 1. The official full project and public Git mirror contain
+Prepared on 2026-11-04 with Revision 2. The official full project and public Git mirror contain
 the module distribution and all three required Commerce Fincra patches. Beta releases are not
 covered by Drupal's security advisory policy.
 
@@ -13,11 +13,29 @@ covered by Drupal's security advisory policy.
 - Removed the seven doc-comment coding-standard exclusions while preserving runtime behavior
   and PHPStan generic/shape types.
 - Documented Drupal Composer installation and migration from the private ZIP repository.
+- Added the first-enforcement trial confirmation. Accounts starts the workspace's one 14-day
+  trial; each action still needs its own administrator choice. Expired trials and grace periods
+  immediately return actions to Shadow.
+- Added bounded policy publication when limits are saved. Drupal pins only a confirmed version
+  for the same connection and values, shows publication status per currency, and safely resolves
+  uncertain requests before publishing another change. Local limits remain available when
+  publication is unsupported or needs owner approval.
+- Added a status-report warning for Shadow checks queued more than an hour, with scheduled-cron
+  guidance. Reading the warning does not process queued work.
+- Aligned installation and pricing guidance with the public downloads catalog. Connected
+  historical replay is metered; the local Store X-ray uses no governed-action allowance.
 
 Update with `composer require 'drupal/decionis:^0.1@beta' --with-dependencies`, then run
 `drush updb -y` and `drush cr`. Review the README's service dependencies, supported hooks and
-failure policies before enabling enforcement. This release does not change the Revision 1
-runtime behavior or add remote policy publication, provider refunds or service entitlements.
+failure policies before enabling enforcement. Entitlements, policy publication, billing
+enrollment and mail need the matching Accounts/Core services and their rollout prerequisites.
+The new service authorities are disabled for this beta's initial rollout, pending the required
+Account rollout evidence and live staging acceptance. The local Store X-ray and existing
+Shadow journey remain available.
+The native key retains only decision scopes. Fincra Support confirmed on 4 November 2026 that
+refunds cover underpayments (full amount received) and overpayments (excess only). Other customer
+refund requests require a separate payout outside Drupal. No ordinary refund API for correctly
+paid purchases was confirmed, and these payouts are not automatically reflected as Drupal refunds.
 
 ## 0.1.1 — Revision 1 private beta
 

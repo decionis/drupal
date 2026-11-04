@@ -4,7 +4,10 @@ services:
   logger.channel.decionis:
     parent: logger.channel_base
     arguments: ['decionis']
-  Drupal\decionis\Gate\Settings: ~
+  Drupal\decionis\Gate\Settings:
+    arguments:
+      # Drupal 10.3 has no autowiring alias for this optional dependency.
+      $keyValueFactory: '@keyvalue'
   Drupal\decionis\Gate\Credentials:
     arguments:
       $keys: '@key.repository'

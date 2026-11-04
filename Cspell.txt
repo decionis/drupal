@@ -17,6 +17,7 @@ licence
 memzero
 nocost
 nosignal
+overpayments
 passwordless
 readyz
 replacepkgs

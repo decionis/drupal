@@ -149,6 +149,7 @@ final class Connector {
    */
   public function refresh(): void {
     $identity = $this->settings->connectionIdentity();
+    $org = $this->settings->get('org_id');
     $key = $this->credentials->apiKey();
     if ($identity !== $this->settings->connectionIdentity()) {
       return;
@@ -158,8 +159,12 @@ final class Connector {
       $this->state->delete(Settings::ENTITLEMENT);
       return;
     }
+    $this->settings->prepareEnforcement($identity);
+    if ($identity !== $this->settings->connectionIdentity()) {
+      return;
+    }
     try {
-      $status = $this->post('/v1/drupal/status', ['org_id' => $this->settings->get('org_id')], $key);
+      $status = $this->post('/v1/drupal/status', ['org_id' => $org], $key);
     }
     catch (\Throwable $error) {
       if ($identity === $this->settings->connectionIdentity()) {
@@ -170,11 +175,68 @@ final class Connector {
     if ($identity !== $this->settings->connectionIdentity()) {
       return;
     }
-    $entitlement = $status['entitlement'] ?? NULL;
+    $this->adoptEntitlement($status, $identity, $org);
+  }
+
+  /**
+   * Requests the workspace's one trial after an administrator confirms.
+   *
+   * The server owns trial identity, dates, and billing transitions. Repeating
+   * this operation must return its current entitlement, never a fresh trial.
+   */
+  public function startTrial(string $identity): bool {
+    if ($identity !== $this->settings->connectionIdentity()) {
+      return FALSE;
+    }
+    if (!$this->settings->trialAvailable()) {
+      return $this->settings->enforcementAllowed();
+    }
+    $org = $this->settings->get('org_id');
+    $key = $this->credentials->apiKey();
+    if ($key === NULL || $identity !== $this->settings->connectionIdentity()) {
+      return FALSE;
+    }
+    $this->settings->prepareEnforcement($identity, TRUE);
+    if ($identity !== $this->settings->connectionIdentity()) {
+      return FALSE;
+    }
+    $result = $this->post('/v1/drupal/entitlement/trial', ['org_id' => $org], $key, 'drupal-trial-' . hash('sha256', $org));
+    if ($identity !== $this->settings->connectionIdentity()) {
+      return FALSE;
+    }
+    $this->adoptEntitlement($result, $identity, $org);
+    return $identity === $this->settings->connectionIdentity() && $this->settings->enforcementAllowed();
+  }
+
+  /**
+   * Adopts only a validated response for the still-current workspace.
+   *
+   * @param array<string, mixed> $result
+   *   Connect, status, or trial response received from the service.
+   * @param string $identity
+   *   Local connection captured before reading its key and sending the request.
+   * @param string $org
+   *   Workspace named by that request.
+   */
+  private function adoptEntitlement(array $result, string $identity, string $org): void {
+    if ($identity !== $this->settings->connectionIdentity()) {
+      return;
+    }
+    $entitlement = $result['entitlement'] ?? NULL;
+    $reportedOrg = $result['org_id'] ?? NULL;
+    if (!is_string($reportedOrg) || strtolower($reportedOrg) !== strtolower($org) || ($entitlement !== NULL && (!is_array($entitlement) || !Settings::validEntitlement($entitlement)))) {
+      $this->state->delete(Settings::ENTITLEMENT);
+      throw new \UnexpectedValueException('DECIONIS_ENTITLEMENT_UNEXPECTED');
+    }
     if (is_array($entitlement)) {
+      if ($entitlement['state'] === 'trial_available') {
+        $this->settings->prepareEnforcement($identity, TRUE);
+      }
       $entitlement['connection_id'] = $identity;
       $entitlement['fetched_at'] = time();
-      $this->state->set(Settings::ENTITLEMENT, $entitlement);
+      if ($identity === $this->settings->connectionIdentity()) {
+        $this->state->set(Settings::ENTITLEMENT, $entitlement);
+      }
     }
     else {
       $this->state->delete(Settings::ENTITLEMENT);
@@ -213,11 +275,10 @@ final class Connector {
     ($this->binding ?? \Drupal::service(Binding::class))->bind($url);
     $this->configFactory->getEditable('decionis.settings')->clear('org_id')->set('mode', 'shadow')->save();
     $this->state->delete(self::STATE);
-    if (is_array($result['entitlement'] ?? NULL)) {
-      $entitlement = $result['entitlement'];
-      $entitlement['connection_id'] = $this->settings->connectionIdentity();
-      $entitlement['fetched_at'] = time();
-      $this->state->set(Settings::ENTITLEMENT, $entitlement);
+    $identity = $this->settings->connectionIdentity();
+    if ($identity !== NULL) {
+      $this->settings->prepareEnforcement($identity);
+      $this->adoptEntitlement($result, $identity, strtolower($orgId));
     }
     $this->moduleHandler->invokeAll('decionis_connected', [$orgId]);
     return 'connected';
@@ -246,14 +307,19 @@ final class Connector {
    *   Request fields serialized as JSON.
    * @param string|null $bearer
    *   Optional credential used only for the outgoing authorization header.
+   * @param string|null $idempotencyKey
+   *   Stable transport replay key; the server owns workspace trial identity.
    *
    * @return array<string, mixed>
    *   The decoded JSON response object.
    */
-  private function post(string $path, array $body, ?string $bearer = NULL): array {
+  private function post(string $path, array $body, ?string $bearer = NULL, ?string $idempotencyKey = NULL): array {
     $factory = new HttpFactory();
     $transport = new Transport($this->http ?? new CurlClient($factory, $factory, 5000, 15000), $factory, $factory, 'drupal-decionis/1.0');
     $headers = $bearer === NULL ? [] : ['Authorization' => 'Bearer ' . $bearer];
+    if ($idempotencyKey !== NULL) {
+      $headers['Idempotency-Key'] = $idempotencyKey;
+    }
     $url = rtrim($this->settings->get('connect_url'), '/') . $path;
     try {
       $text = $transport->send('POST', $url, $headers, json_encode($body, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES), Retry::once(15000));

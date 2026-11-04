@@ -2,6 +2,8 @@
 
 Source copy for the [Decionis Commerce Gate full project](https://www.drupal.org/project/decionis).
 The public beta uses the `decionis` machine name and `drupal/decionis` Composer identity.
+The [downloads page](https://commerce.decionis.com/downloads) lists verified release availability,
+installation steps, checksums, provenance and the Getting Started guide.
 
 ## Short description
 
@@ -10,6 +12,10 @@ policy decisions in Shadow and enforce one action when your workspace entitlemen
 
 ## Description
 
+**Initial beta availability.** Local Store X-ray and the existing Shadow journey are available.
+Enforcement trials, tuned-limit publication, billing-contact confirmation and workspace ownership
+claims are not yet available in this beta.
+
 **Start with your store.** Store X-ray scans 30–365 days of local orders, refunds and promotions,
 with a progress page and a headline for each currency. It shows orders below the suggested margin
 floor, cumulative refunded payments over the limit, stacking, observed outside refunds and cost coverage. No account,
@@ -17,8 +23,10 @@ HTTP request or decision-log write is needed. Refund amounts are cumulative per 
 
 **Tune limits with findings.** Per-currency suggestions come from your own history. Sparse data
 uses explicit defaults. Editing a limit updates its counts; accepted values live in Drupal
-configuration. These local limits drive the X-ray and sandbox. Publishing them to the remote
-workspace still needs an authorized Core/Accounts handoff.
+configuration. These local limits drive the X-ray and sandbox. When connected, saving requests
+publication through the bounded Drupal handoff. Each currency shows **Published as version …**
+only after confirmation; otherwise it remains **Not yet published**. The confirmed version is used
+for subsequent live checks. Native credentials retain their decision-only scopes.
 
 **Cost coverage you can see.** Installation, updates and the repeatable recipe add an editable
 Cost field to every variation type. Map an existing cost field or use the bounded CSV import in
@@ -43,7 +51,9 @@ is never presented as verified.
 
 **Enforce this one.** Each action has a control with its 90-day count, amount involved and expected
 approval frequency. A permission-checked confirmation changes only that action, subject to the
-server's current entitlement. A held refund or price change uses an exact-action, single-use
+server's current entitlement. When a trial is available, that confirmation starts the server's
+14-day trial; visiting the page or retrying does not start another trial. Trial and payment-grace
+expiry return actions to Shadow. A held refund or price change uses an exact-action, single-use
 grant; changed, expired or already-run proposals are refused.
 
 **Keep reviewing.** Deferred refusals produce one nudge for the authorized admin after a successful
@@ -54,17 +64,22 @@ reports list available individual Dossier references and verification links.
 
 ## Scope and boundaries
 
-The `decionis_commerce` module covers refund forms, variation price validation, promotions/coupons,
+The `decionis_commerce` module covers supported refund forms, variation price validation, promotions/coupons,
 order review/placement and manual stock writes with Commerce Stock. Custom code that skips those
 hooks or writes directly to the database can bypass them. The local sandbox, available through
 the admin UI and Drush, checks wiring using rolled-back synthetic records and is labelled sandbox,
 not production evidence.
 
-Refunds issued in a provider dashboard never pass the Drupal preflight. A webhook/payment update
-can make them visible afterward. Commerce Fincra has no ordinary Drupal refund operation, so
-Fincra stores should start with orders, prices and promotions, and restrict provider-dashboard
-refund rights. Failed Fincra payments recorded as refunded are excluded from the outside-refund
-log. No ordinary provider refund API is invented.
+Refunds issued outside Drupal never pass its preflight. A supported provider integration can make
+one visible afterward only by updating the matching Drupal payment with a refund.
+
+Fincra Support confirmed on 4 November 2026 that refunds cover underpayments (the full amount
+received) and overpayments (the excess). Other refund requests require a separate customer payout
+outside Drupal. No ordinary full or partial refund API for correctly paid purchases has been
+confirmed. The module does not execute those payouts, and they are not automatically reflected
+as Drupal refunds. Fincra stores should start with orders, prices and promotions, and review
+payout authorization in their separate payment workflow. Failed Fincra payments recorded as
+refunded are excluded from the outside-refund log.
 
 Optional AgentSafe setup can hold a supported payment key under root or a separate service user.
 The UI shows redacted file/command previews; installation remains a Drush/host action. Setup
@@ -81,9 +96,12 @@ signals, excluding customer names, emails, addresses, coupon codes and payment d
 nudges and digests contain no customer data or coupon codes. Secrets are excluded from config
 exports and logs.
 
-This is a public beta without Drupal security-advisory coverage. Service availability, the Drupal provider deployment, policy-publication
-handoff, entitlement/trial records, replay billing and Core/Accounts mail remain external
-requirements. Drupal's optional digest uses its own mail setup. See the packaged README for
+This is a public beta without Drupal security-advisory coverage. **Connected historical replay is
+metered against the workspace's governed-action allowance, even in Shadow Mode.** The local
+Store X-ray is free and uses none of that allowance. Review [Build pricing](https://decionis.com/pricing#drupal-replay)
+before connecting or sending a large history. Service availability, the Drupal provider deployment,
+policy publication, Accounts entitlements and Core/Accounts mail remain required for connected
+features. Drupal's optional digest uses its own mail setup. See the packaged README for
 installation, defaults, validation scope and current limitations.
 
 ## Requirements and licence

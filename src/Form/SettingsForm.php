@@ -49,6 +49,10 @@ final class SettingsForm extends ConfigFormBase {
     $config = $this->config('decionis.settings');
     /** @var \Drupal\decionis\Gate\Settings $settings */
     $settings = \Drupal::service(Settings::class);
+    if (!$form_state->has('decionis_modes')) {
+      $form_state->set('decionis_modes', ['connection' => $settings->connectionIdentity(), 'active' => $settings->enforcementAllowed()]);
+    }
+    $form['mode_token'] = ['#type' => 'hidden', '#default_value' => \Drupal::csrfToken()->get($this->getFormId() . ':' . (string) $settings->connectionIdentity() . ':' . ($settings->enforcementAllowed() ? 'active' : 'shadow'))];
     $form['status'] = [
       '#type' => 'item',
       '#title' => $this->t('Connection'),
@@ -79,7 +83,9 @@ final class SettingsForm extends ConfigFormBase {
       '#type' => 'radios',
       '#title' => $this->t('Store-wide mode'),
       '#options' => ['shadow' => $this->t('Shadow: log what the policy would do, run everything'), 'enforce' => $this->t('Enforce: act on the verdict')],
-      '#default_value' => $config->get('mode') ?: 'shadow',
+      '#default_value' => $settings->selectionsRequired() ? 'shadow' : ($config->get('mode') ?: 'shadow'),
+      '#disabled' => !$settings->enforcementAllowed(),
+      '#description' => $settings->trialAvailable() ? $this->t('Start your free enforcement trial by choosing “Enforce this one” on the Decisions page.') : '',
     ];
     $form['actions_mode'] = ['#type' => 'details', '#title' => $this->t('Per action'), '#open' => TRUE, '#tree' => TRUE];
     foreach (self::ACTIONS as $key => $label) {
@@ -90,7 +96,8 @@ final class SettingsForm extends ConfigFormBase {
           '#type' => 'select',
           '#title' => $label,
           '#options' => ['inherit' => $this->t('Store-wide'), 'shadow' => $this->t('Shadow'), 'enforce' => $this->t('Enforce')],
-          '#default_value' => $config->get('actions.' . $key) ?: 'inherit',
+          '#default_value' => $settings->selectionsRequired() ? $settings->mode($key) : ($config->get('actions.' . $key) ?: 'inherit'),
+          '#disabled' => !$settings->enforcementAllowed(),
         ],
         'failure' => [
           '#type' => 'select',
@@ -126,6 +133,7 @@ final class SettingsForm extends ConfigFormBase {
         $form['tools'][$route] = ['#type' => 'link', '#title' => $label, '#url' => Url::fromRoute($route), '#prefix' => '<p>', '#suffix' => '</p>'];
       }
     }
+    $form['#cache']['max-age'] = 0;
     return parent::buildForm(Digest::form($form), $form_state);
   }
 
@@ -145,10 +153,20 @@ final class SettingsForm extends ConfigFormBase {
    */
   public function submitForm(array &$form, FormStateInterface $form_state): void {
     $config = $this->config('decionis.settings');
-    $config->set('mode', $form_state->getValue('mode') === 'enforce' ? 'enforce' : 'shadow');
+    /** @var \Drupal\decionis\Gate\Settings $settings */
+    $settings = \Drupal::service(Settings::class);
+    $built = $form_state->get('decionis_modes');
+    $identity = $settings->connectionIdentity();
+    $token = $form_state->getValue('mode_token');
+    $canChoose = is_array($built) && ($built['active'] ?? FALSE) === TRUE && $identity !== NULL && ($built['connection'] ?? NULL) === $identity && $settings->enforcementAllowed() && is_string($token) && \Drupal::csrfToken()->validate($token, $this->getFormId() . ':' . $identity . ':active');
+    if ($canChoose) {
+      $config->set('mode', $form_state->getValue('mode') === 'enforce' ? 'enforce' : 'shadow');
+    }
     foreach (array_keys(self::ACTIONS) as $key) {
       $mode = (string) $form_state->getValue(['actions_mode', $key, 'mode']);
-      $config->set('actions.' . $key, in_array($mode, ['inherit', 'shadow', 'enforce'], TRUE) ? $mode : 'inherit');
+      if ($canChoose) {
+        $config->set('actions.' . $key, in_array($mode, ['inherit', 'shadow', 'enforce'], TRUE) ? $mode : 'inherit');
+      }
       $failure = (string) $form_state->getValue(['actions_mode', $key, 'failure']);
       $fixed = ['order_acceptance' => 'open', 'agent_tool' => 'closed'];
       $config->set('failure.' . $key, $fixed[$key] ?? ($failure === 'open' ? 'open' : 'closed'));
@@ -156,6 +174,11 @@ final class SettingsForm extends ConfigFormBase {
     $config->set('budget_ms', max(50, min(1000, (int) $form_state->getValue('budget_ms'))));
     $config->set('policy_version', mb_substr(trim((string) $form_state->getValue('policy_version')), 0, 120));
     $config->save();
+    if ($canChoose) {
+      foreach (array_keys(self::ACTIONS) as $key) {
+        $settings->selectEnforcement($key, $settings->chosen($key) === 'enforce', $identity);
+      }
+    }
     if (\Drupal::hasService(LimitsForm::class)) {
       \Drupal::service(LimitsForm::class)->submit($form, $form_state);
       $this->configFactory()->getEditable('decionis_commerce.settings')->set('replay_concurrency', max(1, min(8, (int) $form_state->getValue('replay_concurrency'))))->save();

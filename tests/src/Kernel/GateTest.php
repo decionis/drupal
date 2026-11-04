@@ -79,7 +79,7 @@ final class GateTest extends KernelTestBase {
     $settings = $this->container->get(Settings::class);
     $this->assertSame('enforce', $settings->chosen('refund_request'));
     $this->assertSame('shadow', $settings->mode('refund_request'), 'no entitlement from the server: Shadow');
-    $this->container->get('state')->set(Settings::ENTITLEMENT, ['enforcement' => TRUE, 'state' => 'trial']);
+    $this->container->get('state')->set(Settings::ENTITLEMENT, ['enforcement' => TRUE, 'state' => 'paid']);
     $this->assertSame('enforce', $settings->mode('refund_request'));
     $this->config('decionis.settings')->set('actions.refund_request', 'shadow')->save();
     $this->assertSame('shadow', $settings->mode('refund_request'), 'a per-action Shadow wins over store-wide Enforce');

@@ -6,6 +6,7 @@ const mode = process.argv[2] ?? 'ok';
 const calls = [];
 const attempts = new Map();
 const decisions = new Map();
+let trial = { state: 'trial_available', enforcement: false };
 let active = 0;
 let peak = 0;
 const server = createServer((request, response) => {
@@ -52,6 +53,24 @@ const server = createServer((request, response) => {
         api_key: 'dcy_aaaaaaaa_synthetic-site-scoped-test-key',
         mode: 'shadow',
       });
+      return;
+    }
+    if (mode === 'trial' && ['/v1/drupal/status', '/v1/drupal/entitlement/trial'].includes(url.pathname)) {
+      const org = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1';
+      if (request.headers.authorization !== 'Bearer dcy_aaaaaaaa_synthetic-site-scoped-test-key' || Object.keys(body).length !== 1 || body.org_id !== org) {
+        send(400, { error: 'INVALID_SYNTHETIC_REQUEST' });
+        return;
+      }
+      if (url.pathname.endsWith('/trial')) {
+        if (typeof key !== 'string' || !key || key.length > 200) {
+          send(400, { error: 'IDEMPOTENCY_KEY_REQUIRED' });
+          return;
+        }
+        if (trial.state === 'trial_available') {
+          trial = { state: 'trial', enforcement: true, ends_at: new Date(Date.now() + 14 * 86400000).toISOString() };
+        }
+      }
+      send(200, { org_id: org, entitlement: trial });
       return;
     }
     if (url.pathname === '/redirect') {

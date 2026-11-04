@@ -21,8 +21,14 @@ estimates are identified separately.
 
 ## Availability and requirements
 
+Local Store X-ray and the existing Shadow journey are available. Enforcement trials, tuned-limit
+publication, billing-contact confirmation and workspace ownership claims are not yet available in
+this beta.
+
 This module is a public beta. The official [Decionis Commerce Gate project](https://www.drupal.org/project/decionis)
-provides Drupal releases, with a [module-only GitHub mirror](https://github.com/decionis/drupal).
+hosts the public release series, with a [module-only GitHub mirror](https://github.com/decionis/drupal).
+Use the [downloads page](https://commerce.decionis.com/downloads) for verified package availability,
+release files, checksums, provenance and the Getting Started guide.
 The machine name remains `decionis` and the Composer identity remains `drupal/decionis`.
 Beta releases are not covered by Drupal's security advisory policy. The earlier private **0.1.1**
 artifact remains a separate historical release. [Contact Decionis](https://decionis.com/contact)
@@ -44,12 +50,11 @@ digest has its own mail configuration.
 
 ### 1. Install and add costs
 
-In a Drupal project with a supported Commerce version, install the beta through Drupal's Composer
-repository. The stability flag applies only to this package:
+In a Drupal project with a supported Commerce version, use the exact Composer command shown for
+the verified release on the [downloads page](https://commerce.decionis.com/downloads). Composer
+resolves the PHP client and module dependencies. Then enable the module and apply the recipe:
 
 ```bash
-composer config repositories.drupal composer https://packages.drupal.org/8
-composer require 'drupal/decionis:^0.1@beta'
 drush en decionis_commerce -y
 cd web
 php core/scripts/drupal recipe modules/contrib/decionis/recipes/decionis_commerce
@@ -122,10 +127,12 @@ The other defaults are a 12% margin floor (capped at the observed median when av
 stacking ceiling and repeat threshold 3. These are starting amounts, not exchange-rate conversions.
 The page identifies every fallback and its sample count.
 
-Accepted limits drive the local X-ray and sandbox. **They do not yet change the workspace's
-remote policy.** The existing publication endpoint needs permissions the Drupal key does not have;
-Core/Accounts must supply an authorized handoff. A published remote policy version can be pinned
-in settings. Do not assume a local suggestion has been published or enforced.
+Accepted limits drive the local X-ray and sandbox. When connected, **Save configuration** also
+requests publication through the bounded Drupal handoff. The native key retains only decision
+scopes. Each currency is labelled **Published as version …** only after the service confirms
+publication; that version is pinned for subsequent live checks. Otherwise it remains **Not yet
+published** and the reason is shown. A 403/404 response keeps limits local. A conflict or owner-review
+requirement must be resolved before assuming the local values govern remote decisions.
 
 ### 4. Connect, then see the first replay results
 
@@ -143,7 +150,10 @@ opening **Decisions** at `/admin/commerce/decionis/decisions`. Cron continues th
 90-day history. Remote concurrency defaults to four requests and is configurable from one to
 eight. Repeating the same source/entity/policy replay updates its row instead of doubling counts.
 If the API is unavailable, the page shows the actual failed/ungoverned status; it cannot promise a
-signed catch. Replay billing treatment remains a server-side dependency.
+signed catch. **Connected historical replay is metered against the workspace's governed-action
+allowance, even in Shadow Mode.** Review the allowance before connecting or replaying a large
+history. Local Store X-ray is free and uses none of that allowance. See
+[Build pricing](https://decionis.com/pricing#drupal-replay).
 
 Connection identity and key references live in State; Key stores the credentials. Importing a
 pre-connect configuration snapshot does not disconnect the site. Credentials are bound to the
@@ -160,12 +170,16 @@ version when present, and evidence completeness. **Download Dossier** preserves 
 
 Each action links to **Enforce this one**, showing the last 90 days' count, amount involved and
 expected approval frequency. Only that action changes, through a permission-checked confirmation
-form. The control stays disabled with the server's plan reason while entitlement is absent or
-expired. [Pricing](https://decionis.com/pricing) describes plans; the module cannot start an
-unavailable trial. Settings also allow returning an action to Shadow without deleting history.
+form. A server-issued **trial available** state lets that confirmation request the 14-day trial;
+page views and repeated submissions cannot restart it. Only the selected action is enabled. The
+control stays disabled with the server's reason while entitlement is absent or expired. Trial and
+payment-grace deadlines return actions to Shadow locally when they pass; an active paid entitlement
+keeps enforcement available. [Pricing](https://decionis.com/pricing) describes the Build plan.
+Settings also allow returning an action to Shadow without deleting history.
 
 For a Fincra store, start with orders, prices or promotions. Commerce Fincra has no ordinary
-refund operation in Drupal: those refunds happen outside this gate.
+refund operation in Drupal. Fincra advises a separate customer payout for refund requests other
+than qualifying underpayments or overpayments; the module does not execute those payouts.
 
 ## Daily review and reports
 
@@ -211,11 +225,18 @@ _approve decionis holds_ opens the exact proposal in Presence. A valid single-us
 once; changed, expired, already-run or stale-connection proposals are refused. Managed approver
 notifications remain dependent on the service's delivery setup.
 
-Provider-dashboard refunds never pass the preflight. A payment update or webhook can make them
-visible as outside refunds, with the decision that would have applied. A missing webhook cannot
-be inferred from an empty log. On Fincra, failed payments recorded as refunded are excluded, and
-the order check runs before the off-site payment redirect. Limit refund rights in the Fincra
-dashboard; the module cannot add an ordinary refund API to that provider.
+Refunds issued outside Drupal never pass its preflight. Where a supported provider integration
+updates the matching Drupal payment with a refund, Commerce Gate can show an outside-refund
+observation and the decision that would have applied. An empty log does not prove that no refund
+occurred.
+
+Fincra Support confirmed on 4 November 2026 that its refund service covers underpayments
+(returning the full amount received) and overpayments (returning only the excess). Other refund
+requests require a separate customer payout outside Drupal. No ordinary full or partial refund
+API for correctly paid purchases has been confirmed. The module does not execute these payouts,
+and they are not automatically reflected as Drupal refunds. Review payout authorization in the
+separate payment workflow your team uses. Failed Fincra payments recorded as refunded are
+excluded from observations; the order check runs before the off-site payment redirect.
 
 ## What leaves the site
 
@@ -285,8 +306,9 @@ composer update --lock
 ```
 
 Keep `patches/` in the repository. [Commerce Fincra](https://www.drupal.org/project/commerce_fincra)
-currently requires Drupal 10. It does not provide ordinary refunds in Drupal, and its provider
-only supports reversal of qualifying over/underpayments. AgentSafe cannot expand that API scope.
+currently requires Drupal 10. Its supported refunds cover underpayments and overpayments as
+described above; ordinary customer refund requests require a separate payout outside Drupal.
+AgentSafe cannot expand that refund API scope or make a payout a Drupal refund record.
 
 ## Drush and troubleshooting
 
@@ -303,8 +325,9 @@ The sandbox also supports `--authority=hosted` with `DECIONIS_SANDBOX_API_KEY` a
 `DECIONIS_SANDBOX_ORG_ID` (or lower-case Key entries), and `--authority=account` for the site's
 workspace in Shadow. `--policy=<version>` pins a published policy for hosted/account runs.
 
-- **Pending Shadow or replay rows:** run `drush cron` or the protected cron URL and inspect the site queue; an unavailable API cannot
-  produce a signed verdict. Local X-ray still works.
+- **Pending Shadow or replay rows:** run `drush cron` or the protected cron URL and inspect the site queue.
+  The status report warns when queued Shadow checks are more than one hour old; reading the report
+  does no queue or network work. An unavailable API cannot produce a signed verdict. Local X-ray still works.
 - **Copy banner:** reconnect the new site or disconnect its local copy. Do not reuse production
   approvers. URL/proxy configuration changes can also require rebinding.
 - **Challenge not readable:** allow the two challenge routes. Public URLs must be HTTPS on the

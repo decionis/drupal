@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 use Drupal\decionis\Gate\Migration;
 use Drupal\decionis\Connect\Migration as ConnectionMigration;
+use Drupal\decionis\Report\Pending;
 
 /**
  * Implements hook_install().
@@ -48,6 +49,15 @@ function decionis_requirements(string $phase): array {
       'value' => $connected ? 'Connected' : 'Not connected: actions are logged as ungoverned',
       'severity' => $connected ? REQUIREMENT_OK : REQUIREMENT_WARNING,
     ];
+    $pending = (new Pending(\Drupal::database(), \Drupal::time()))->read();
+    if ($pending !== NULL && $pending['count'] > 0) {
+      $requirements['decionis_shadow_pending'] = [
+        'title' => 'Commerce Gate Shadow checks',
+        'value' => \Drupal::translation()->formatPlural($pending['count'], '1 overdue Shadow check; oldest queued @age seconds ago.', '@count overdue Shadow checks; oldest queued @age seconds ago.', ['@age' => $pending['oldest_age']]),
+        'severity' => REQUIREMENT_WARNING,
+        'description' => t('Shadow checks have waited more than an hour. Schedule <code>drush cron</code> for this site to process queued Shadow checks and replays. On PHP-FPM, up to four checks run after each response; the rest need scheduled cron.'),
+      ];
+    }
   }
   return $requirements;
 }
@@ -57,9 +67,19 @@ function decionis_requirements(string $phase): array {
  */
 function decionis_uninstall(): void {
   $state = \Drupal::state();
-  foreach (['decionis.entitlement', 'decionis.connect', 'decionis.connection', 'decionis.secret.decionis_api_key', 'decionis.secret.decionis_site_key'] as $key) {
+  foreach (['decionis.entitlement', 'decionis.connect', 'decionis.connection', 'decionis.secret.decionis_api_key', 'decionis.secret.decionis_site_key', 'decionis_commerce.policy', 'decionis_commerce.policy_pending'] as $key) {
     $state->delete($key);
   }
+  $store = \Drupal::keyValue('state');
+  // Drupal 10's key-value API has no keys-only enumeration method.
+  $keys = method_exists($store, 'getAllKeys') ? $store->getAllKeys() : array_keys($store->getAll());
+  $selections = [];
+  foreach ($keys as $key) {
+    if (is_string($key) && str_starts_with($key, 'decionis.enforcement.')) {
+      $selections[] = $key;
+    }
+  }
+  $state->deleteMultiple($selections);
   $storage = \Drupal::entityTypeManager()->getStorage('key');
   foreach (['decionis_api_key', 'decionis_site_key'] as $id) {
     $storage->load($id)?->delete();

@@ -201,14 +201,14 @@ final class DashboardController extends ControllerBase {
     $rows = [];
     $fincra = Enforcement::fincraOnly();
     foreach (Activity::LABELS as $action => $label) {
-      $enabled = $this->settings->enforcementAllowed() && $this->settings->connected() && $this->currentUser()->hasPermission('administer decionis') && !($action === 'refund_request' && $fincra);
+      $enabled = ($this->settings->enforcementAllowed() || $this->settings->trialAvailable()) && $this->settings->connected() && $this->currentUser()->hasPermission('administer decionis') && !($action === 'refund_request' && $fincra);
       $control = $enabled
         ? ['#type' => 'link', '#title' => $this->t('Enforce this one'), '#url' => Url::fromRoute('decionis.enforce', ['action' => $action])]
         : ['#type' => 'html_tag', '#tag' => 'button', '#value' => $this->t('Enforce this one'), '#attributes' => ['type' => 'button', 'disabled' => 'disabled', 'aria-disabled' => 'true']];
-      $note = $action === 'refund_request' && $fincra ? ' Fincra refunds happen outside Drupal and cannot be stopped here. Start with orders, prices or promotions.' : '';
+      $note = $action === 'refund_request' && $fincra ? ' Fincra has no ordinary refund operation in Drupal. Other refund requests require a separate customer payout outside Drupal, which is not automatically reflected as a refund. Start with orders, prices or promotions.' : '';
       $rows[] = [$label, strtoupper($this->settings->mode($action)), Enforcement::impact($activity['by_action'][$action] ?? []) . $note, ['data' => $control]];
     }
-    return ['#type' => 'table', '#caption' => $this->t('Enforce one action. Predicted impact from completed decisions in the last 90 days; estimates depend on the workspace policy. Controls need an active enforcement plan and an administrator.'), '#header' => [$this->t('Action'), $this->t('Mode'), $this->t('Predicted impact'), $this->t('Control')], '#rows' => $rows];
+    return ['#type' => 'table', '#caption' => $this->t('Enforce one action. Predicted impact from completed decisions in the last 90 days; estimates depend on the workspace policy. Controls need an available trial or active enforcement plan and an administrator.'), '#header' => [$this->t('Action'), $this->t('Mode'), $this->t('Predicted impact'), $this->t('Control')], '#rows' => $rows];
   }
 
   /**

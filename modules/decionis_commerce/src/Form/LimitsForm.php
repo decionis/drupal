@@ -6,6 +6,7 @@ namespace Drupal\decionis_commerce\Form;
 
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
+use Drupal\decionis_commerce\Policy;
 use Drupal\decionis_commerce\Replay\Replay;
 use Drupal\decionis_commerce\Report\History;
 use Drupal\decionis_commerce\Report\Limits;
@@ -29,12 +30,16 @@ final class LimitsForm {
     private readonly Limits $limits,
     private readonly History $history,
     private readonly Replay $replay,
+    private readonly Policy $policy,
   ) {}
 
   /**
    * Adds the local policy section to the existing settings form.
    */
   public function build(array &$form, FormStateInterface $formState): void {
+    if (!$formState->has('decionis_limits_connection')) {
+      $formState->set('decionis_limits_connection', $this->policy->identity());
+    }
     $samples = $formState->get('decionis_limit_samples');
     if (!is_array($samples)) {
       $samples = [];
@@ -63,7 +68,7 @@ final class LimitsForm {
       '#tree' => TRUE,
       '#prefix' => '<div id="decionis-limits">',
       '#suffix' => '</div>',
-      'notice' => ['#markup' => '<p>' . $this->t('These limits apply to the local X-ray and sandbox. Publishing them to your connected workspace is not available yet; connected checks still use its current policy. Findings use the last 90 days on this site.') . '</p>'],
+      'notice' => ['#markup' => '<p>' . $this->t('These limits apply to the local X-ray and sandbox. Saving also requests publication to your connected workspace. Live checks use the workspace policy until publication is confirmed. Findings use the last 90 days on this site.') . '</p>'],
     ];
     foreach ($values as $currency => $chosen) {
       $preview = $chosen;
@@ -78,6 +83,10 @@ final class LimitsForm {
       }
       $findings = Limits::findings($currency, $preview, $samples[$currency] ?? []);
       $form['decionis_limits'][$currency] = ['#type' => 'fieldset', '#title' => $currency];
+      $version = $this->policy->version($currency, $preview);
+      $form['decionis_limits'][$currency]['publication'] = [
+        '#markup' => '<p>' . ($version === NULL ? $this->t('Not yet published') : $this->t('Published as version @version', ['@version' => $version])) . '</p>',
+      ];
       foreach (self::LABELS as $key => $label) {
         $field = [
           '#type' => 'number',
@@ -152,6 +161,21 @@ final class LimitsForm {
         \Drupal::state()->set(Xray::STATE, $report);
       }
       \Drupal::messenger()->addStatus($this->t('Limits updated. Run Store X-ray again to estimate their impact.'));
+    }
+    $publication = $this->policy->publish($chosen, $formState->get('decionis_limits_connection'));
+    if ($publication['status'] === 'published') {
+      \Drupal::messenger()->addStatus($this->t('Limits published as version @version.', ['@version' => $publication['version']]));
+    }
+    elseif ($publication['status'] !== 'local') {
+      $message = match ($publication['status']) {
+        'unavailable' => $this->t('Limits saved on this site, but not yet published. Publication may need workspace-owner approval or service setup.'),
+        'conflict' => $this->t('Limits saved on this site, but not yet published. The workspace policy changed; review its current version before trying again.'),
+        'stale' => $this->t('Limits saved on this site, but not yet published. The connection or limits changed while saving; reload this page before trying again.'),
+        'invalid' => $this->t('Limits saved on this site, but not yet published. Publication requires non-negative percentages up to 100, refund limits up to 1 trillion, and whole repeat limits up to 1 billion.'),
+        'busy' => $this->t('Limits saved on this site, but not yet published. Another publication is in progress or the service is busy; try saving again shortly.'),
+        default => $this->t('Limits saved on this site, but publication could not be confirmed. Save again to safely check the same request.'),
+      };
+      \Drupal::messenger()->addWarning($message);
     }
   }
 

@@ -37,7 +37,7 @@ final class CopyNoticeTest extends BrowserTestBase {
     $record['org_id'] = 'synthetic-original-workspace';
     $record['binding'] = ['url' => 'https://original.example', 'host' => 'synthetic-other-host'];
     \Drupal::state()->set(Binding::STATE, $record);
-    \Drupal::state()->set(Settings::ENTITLEMENT, ['enforcement' => TRUE, 'state' => 'trial']);
+    \Drupal::state()->set(Settings::ENTITLEMENT, ['enforcement' => TRUE, 'state' => 'paid']);
     $this->drupalLogin($this->drupalCreateUser(['administer decionis', 'view decionis decisions']));
     $this->drupalGet('/admin/commerce/decionis/decisions');
     $this->assertSession()->pageTextContains('This looks like a copy of a connected site');
