@@ -118,19 +118,58 @@ phpunit:
       "$drush" --root="$root" en commerce_checkout commerce_promotion commerce_payment decionis_commerce -y -q
       # Empty lazy-created tables are harmless; existing non-cache row counts
       # must return to their starting values after the local sandbox.
-      count='$d = \Drupal::database(); $t = $d->schema()->findTables("%"); sort($t); $c = []; foreach ($t as $x) { if (!str_starts_with($x, "cache")) { $n = (int) $d->select($x, "t")->countQuery()->execute()->fetchField(); if ($n > 0) { $c[$x] = $n; } } } echo hash("sha256", json_encode($c));'
-      before=$("$drush" --root="$root" php:eval "$count")
-      "$drush" --root="$root" decionis:sandbox --authority=local --json > sandbox-report.json
-      after=$("$drush" --root="$root" php:eval "$count")
+      count=$(cat <<'PHP'
+      $database = \Drupal::database();
+      if ($database->databaseType() === 'sqlite') {
+        // SQLite findTables() omits main when this fresh site has no prefix.
+        if ($database->getPrefix() !== '') {
+          throw new \RuntimeException('The SQLite smoke site must not use a table prefix.');
+        }
+        $tables = $database->query("SELECT name FROM main.sqlite_master WHERE type = 'table' AND substr(name, 1, 7) <> 'sqlite_'")->fetchCol();
+      }
+      else {
+        $tables = $database->schema()->findTables('%');
+      }
+      if ($tables === []) {
+        throw new \RuntimeException('The smoke database has no tables to compare.');
+      }
+      sort($tables, SORT_STRING);
+      $counts = [];
+      foreach ($tables as $table) {
+        if (!str_starts_with($table, 'cache')) {
+          $rowCount = (int) $database->select($table, 't')->countQuery()->execute()->fetchField();
+          if ($rowCount > 0) {
+            $counts[$table] = $rowCount;
+          }
+        }
+      }
+      if ($counts === []) {
+        throw new \RuntimeException('The smoke database has no nonempty non-cache tables.');
+      }
+      foreach (['config', 'users', 'users_field_data'] as $table) {
+        if (($counts[$table] ?? 0) < 1) {
+          throw new \RuntimeException('The smoke database is missing required core rows.');
+        }
+      }
+      $json = json_encode($counts, JSON_THROW_ON_ERROR);
+      echo json_encode(['database_type' => $database->databaseType(), 'non_empty_table_counts' => $counts, 'fingerprint' => hash('sha256', $json)], JSON_THROW_ON_ERROR) . PHP_EOL;
+      PHP
+      )
+      "$drush" --root="$root" php:eval "$count" > SandboxDatabaseBefore.json
+      sandboxExit=0
+      "$drush" --root="$root" decionis:sandbox --authority=local --json > sandbox-report.json || sandboxExit=$?
+      "$drush" --root="$root" php:eval "$count" > SandboxDatabaseAfter.json
       cat sandbox-report.json
+      test "$sandboxExit" -eq 0
       php -r '$r = json_decode(file_get_contents("sandbox-report.json"), true, 512, JSON_THROW_ON_ERROR); exit(($r["exit_code"] ?? NULL) === 0 && ($r["verdict"] ?? "") === "BOUNDARY HOLDS" ? 0 : 1);'
-      test "$before" = "$after"
+      cmp SandboxDatabaseBefore.json SandboxDatabaseAfter.json
       SANDBOX
       if [ "$phpunitStatus" -ne 0 ]; then
         exit "$phpunitStatus"
       fi
       exit "$sandboxStatus"
   artifacts:
+    when: always
     paths:
       - junit.xml
       - $CI_PROJECT_DIR/$_WEB_ROOT/sites/default/files/simpletest
@@ -138,6 +177,8 @@ phpunit:
       - apache.access.log.txt
       - apache.error.log.txt
       - sandbox-report.json
+      - SandboxDatabaseBefore.json
+      - SandboxDatabaseAfter.json
 
 phpunit (commerce 2):
   extends: phpunit (previous major)
