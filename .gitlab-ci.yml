@@ -1,0 +1,111 @@
+# drupal.org GitLab CI for drupal/decionis, from the Drupal Association templates.
+# https://git.drupalcode.org/project/gitlab_templates
+include:
+  - project: $_GITLAB_TEMPLATES_REPO
+    ref: $_GITLAB_TEMPLATES_REF
+    file:
+      - "/includes/include.drupalci.main.yml"
+      - "/includes/include.drupalci.variables.yml"
+      - "/includes/include.drupalci.workflows.yml"
+
+variables:
+  # Keep the public matrix on the supported Drupal and Commerce majors.
+  OPT_IN_TEST_PREVIOUS_MAJOR: "1"
+  _AUTORUN_PREVIOUS_MAJOR: "push-and-mr"
+  DECIONIS_TEST_COMMERCE: "^3.3.13"
+  # Match the sequential acceptance suite used for the merchant package.
+  _PHPUNIT_CONCURRENT: "0"
+  _PHPCS_ALLOW_FAILURE: "0"
+  _PHPSTAN_ALLOW_FAILURE: "0"
+  SKIP_ESLINT: "1"
+  SKIP_STYLELINT: "1"
+
+# These are test dependencies, added before the template builds its Drupal site.
+# Each Commerce variant produces its own vendor tree and Composer lock file.
+.composer-base:
+  before_script:
+    - composer require --dev --no-update --no-interaction "drupal/commerce:$DECIONIS_TEST_COMMERCE" "drush/drush:^12 || ^13"
+    - |
+      if [ "$DECIONIS_TEST_COMMERCE" = "^3.3.13" ]; then
+        composer require --dev --no-update --no-interaction "drupal/commerce_stock:^3"
+      fi
+
+composer:
+  variables:
+    DRUPAL_CORE: "^11"
+    PHP_VERSION: "8.3"
+    # Use this matrix row's major, rather than the module's combined range.
+    IGNORE_PROJECT_DRUPAL_CORE_VERSION: "1"
+
+composer (previous major):
+  variables:
+    DRUPAL_CORE: "^10.3"
+    PHP_VERSION: "8.1"
+    IGNORE_PROJECT_DRUPAL_CORE_VERSION: "1"
+
+composer (commerce 2):
+  extends: composer (previous major)
+  variables:
+    DECIONIS_TEST_COMMERCE: "^2.41"
+
+phpunit:
+  before_script:
+    - export _NODE_VERSION=22.23.2
+    - !reference [.check-nvm]
+    - |
+      # PHPUnit runs as www-data with sudo's system PATH. Expose the pinned
+      # Node outside root's NVM directory in this disposable CI container.
+      install -m 755 "$(command -v node)" /usr/local/bin/node
+      npm install --prefix "$CI_PROJECT_DIR/.decionis-ci/agentsafe" --ignore-scripts --no-audit --no-fund @decionis/agentsafe@0.7.0
+      export AGENTSAFE_BIN="$CI_PROJECT_DIR/.decionis-ci/agentsafe/node_modules/.bin/agentsafe"
+      test "$(sudo -u www-data -H -E node --version)" = v22.23.2
+      sudo -u www-data -H -E "$AGENTSAFE_BIN" --help > /dev/null
+      # Preserve the Commerce-only deprecation allowlist used by GitHub CI.
+      cat "$CI_PROJECT_DIR/$_WEB_ROOT/core/.deprecation-ignore.txt" "$DRUPAL_PROJECT_FOLDER/tests/deprecation-ignore.txt" > "$CI_PROJECT_DIR/.decionis-ci/deprecation-ignore.txt"
+      export SYMFONY_DEPRECATIONS_HELPER="ignoreFile=$CI_PROJECT_DIR/.decionis-ci/deprecation-ignore.txt"
+  script:
+    # The template reference records EXIT_CODE without exiting, so both the
+    # acceptance suite and sandbox determine the job's result.
+    - !reference [.phpunit-base-script]
+    - |
+      phpunitStatus="${EXIT_CODE:-0}"
+      sandboxStatus=0
+      bash -euo pipefail <<'SANDBOX' || sandboxStatus=$?
+      cd "$CI_PROJECT_DIR"
+      drush="$COMPOSER_BIN_DIR/drush"
+      root="$CI_PROJECT_DIR/$_WEB_ROOT"
+      db="$CI_PROJECT_DIR/sandbox.sqlite"
+      # Drush 12 and 13 use different forms for an absolute SQLite path.
+      if [ "$("$drush" version --field=drush-version | cut -d. -f1)" -ge 13 ]; then
+        url="sqlite://localhost/$db"
+      else
+        url="sqlite://$db"
+      fi
+      "$drush" --root="$root" site:install minimal --db-url="$url" --yes -q
+      "$drush" --root="$root" en commerce_checkout commerce_promotion commerce_payment decionis_commerce -y -q
+      # Empty lazy-created tables are harmless; existing non-cache row counts
+      # must return to their starting values after the local sandbox.
+      count='$d = \Drupal::database(); $t = $d->schema()->findTables("%"); sort($t); $c = []; foreach ($t as $x) { if (!str_starts_with($x, "cache")) { $n = (int) $d->select($x, "t")->countQuery()->execute()->fetchField(); if ($n > 0) { $c[$x] = $n; } } } echo hash("sha256", json_encode($c));'
+      before=$("$drush" --root="$root" php:eval "$count")
+      "$drush" --root="$root" decionis:sandbox --authority=local --json > sandbox-report.json
+      after=$("$drush" --root="$root" php:eval "$count")
+      cat sandbox-report.json
+      php -r '$r = json_decode(file_get_contents("sandbox-report.json"), true, 512, JSON_THROW_ON_ERROR); exit(($r["exit_code"] ?? NULL) === 0 && ($r["verdict"] ?? "") === "BOUNDARY HOLDS" ? 0 : 1);'
+      test "$before" = "$after"
+      SANDBOX
+      if [ "$phpunitStatus" -ne 0 ]; then
+        exit "$phpunitStatus"
+      fi
+      exit "$sandboxStatus"
+  artifacts:
+    paths:
+      - junit.xml
+      - $CI_PROJECT_DIR/$_WEB_ROOT/sites/default/files/simpletest
+      - $BROWSERTEST_OUTPUT_DIRECTORY
+      - apache.access.log.txt
+      - apache.error.log.txt
+      - sandbox-report.json
+
+phpunit (commerce 2):
+  extends: phpunit (previous major)
+  needs: [composer (commerce 2)]

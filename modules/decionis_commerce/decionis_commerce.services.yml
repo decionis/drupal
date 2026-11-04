@@ -1,0 +1,59 @@
+services:
+  _defaults:
+    autowire: true
+  Drupal\decionis_commerce\Compatibility: ~
+  Drupal\decionis_commerce\Map\Cost: ~
+  Drupal\decionis_commerce\Map\CostFields: ~
+  Drupal\decionis_commerce\Map\Attempts: ~
+  Drupal\decionis_commerce\Map\Actions: ~
+  Drupal\decionis_commerce\Guard\Refunds: ~
+  Drupal\decionis_commerce\Guard\Orders: ~
+  Drupal\decionis_commerce\Replay\Replay: ~
+  Drupal\decionis_commerce\Replay\Runs:
+    arguments:
+      $lock: '@lock'
+      $queues: '@queue'
+  Drupal\decionis_commerce\Report\History: ~
+  Drupal\decionis_commerce\Report\Limits: ~
+  Drupal\decionis_commerce\Report\Coverage: ~
+  Drupal\decionis_commerce\Form\LimitsForm: ~
+  Drupal\decionis_commerce\Import\Costs: ~
+  Drupal\decionis_commerce\Sandbox\Sandbox: ~
+  Drupal\decionis_commerce\Sandbox\Isolation:
+    arguments:
+      $tags: '@cache_tags.invalidator'
+      $lock: '@lock'
+      $queues: '@queue'
+      $flood: '@flood'
+  Drupal\decionis_commerce\Sandbox\Wiring:
+    arguments:
+      $dispatcher: '@event_dispatcher'
+      $bundles: '@entity_type.bundle.info'
+  Drupal\decionis_commerce\EventSubscriber\OrderSubscriber:
+    tags:
+      - { name: event_subscriber }
+  Drupal\decionis_commerce\Hook\CommerceHooks:
+    class: Drupal\decionis_commerce\Hook\CommerceHooks
+  Drupal\decionis_commerce\Sandbox\Quiet:
+    tags:
+      - { name: config.factory.override, priority: 100 }
+  Drupal\decionis_commerce\Approval\RefundExecutor:
+    tags:
+      - { name: decionis.executor }
+  Drupal\decionis_commerce\Approval\PriceExecutor:
+    tags:
+      - { name: decionis.executor }
+  Drupal\decionis_commerce\Gateway\Probe: ~
+  Drupal\decionis_commerce\Gateway\Runner: ~
+  Drupal\decionis_commerce\Gateway\Setup: ~
+  Drupal\decionis_commerce\Gateway\Custody:
+    tags:
+      - { name: config.factory.override, priority: 200 }
+  Drupal\decionis_commerce\Gateway\Rollback: ~
+  Drupal\decionis_commerce\Gateway\Uninstall:
+    tags:
+      - { name: module_install.uninstall_validator }
+  Drupal\decionis_commerce\Gateway\Watchdog:
+    arguments:
+      $mail: '@plugin.manager.mail'
+      $loggerFactory: '@logger.factory'

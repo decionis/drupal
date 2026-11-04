@@ -1,0 +1,12 @@
+shipping:
+  label: Shipping
+  singular_label: shipping
+  plural_label: shipping
+  has_ui: false
+  weight: 0
+shipping_promotion:
+  label: Shipping promotion
+  singular_label: shipping promotion
+  plural_label: shipping promotions
+  has_ui: false
+  weight: 1

@@ -1,0 +1,6 @@
+name: 'Decionis schema test'
+type: module
+description: 'Creates a table while a sandbox run is open, as a contrib module could. For tests only.'
+package: Testing
+core_version_requirement: ^10.3 || ^11
+hidden: true

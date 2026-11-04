@@ -1,0 +1,8 @@
+name: 'Decionis Fincra test gateway'
+type: module
+description: 'A stand-in for Commerce Fincra with the base URL and held-key patches, for tests only.'
+package: Testing
+core_version_requirement: ^10.3 || ^11
+hidden: true
+dependencies:
+  - commerce:commerce_payment

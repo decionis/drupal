@@ -1,0 +1,6 @@
+name: 'Decionis shipping test'
+type: module
+description: 'The adjustment types Commerce Shipping defines, without Commerce Shipping. For tests only.'
+package: Testing
+core_version_requirement: ^10.3 || ^11
+hidden: true

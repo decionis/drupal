@@ -1,0 +1,94 @@
+<?php
+
+/**
+ * @file
+ * Install, update and requirements for Decionis.
+ */
+
+declare(strict_types=1);
+
+use Drupal\decionis\Gate\Migration;
+use Drupal\decionis\Connect\Migration as ConnectionMigration;
+
+/**
+ * Implements hook_install().
+ */
+function decionis_install(): void {
+  Migration::update();
+}
+
+/**
+ * Implements hook_requirements().
+ */
+function decionis_requirements(string $phase): array {
+  $requirements = [];
+  $sodium = function_exists('sodium_crypto_sign_verify_detached');
+  $client = class_exists('Decionis\Client\Client');
+  $requirements['decionis_dependencies'] = [
+    'title' => 'Commerce Gate',
+    'value' => $sodium && $client ? 'PHP client and libsodium available' : 'Missing dependencies',
+    'severity' => $sodium && $client ? REQUIREMENT_OK : REQUIREMENT_ERROR,
+    'description' => $sodium && $client ? '' : 'Commerce Gate needs ext-sodium and the decionis/php-client library (install the module with Composer).',
+  ];
+  // Millisecond timeouts do not bound a synchronous DNS lookup: without an
+  // asynchronous resolver, a slow lookup can hold checkout past its budget.
+  $features = function_exists('curl_version') ? (int) (curl_version()['features'] ?? 0) : 0;
+  if (defined('CURL_VERSION_ASYNCHDNS') && ($features & CURL_VERSION_ASYNCHDNS) === 0) {
+    $requirements['decionis_dns'] = [
+      'title' => 'Commerce Gate checkout budget',
+      'value' => 'libcurl resolves host names synchronously',
+      'severity' => REQUIREMENT_WARNING,
+      'description' => 'A slow DNS lookup is not bounded by the checkout budget. Use a libcurl built with the threaded or c-ares resolver, or a local caching resolver.',
+    ];
+  }
+  if ($phase === 'runtime') {
+    $connected = \Drupal::service('Drupal\decionis\Gate\Settings')->connected();
+    $requirements['decionis_connection'] = [
+      'title' => 'Commerce Gate connection',
+      'value' => $connected ? 'Connected' : 'Not connected: actions are logged as ungoverned',
+      'severity' => $connected ? REQUIREMENT_OK : REQUIREMENT_WARNING,
+    ];
+  }
+  return $requirements;
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function decionis_uninstall(): void {
+  $state = \Drupal::state();
+  foreach (['decionis.entitlement', 'decionis.connect', 'decionis.connection', 'decionis.secret.decionis_api_key', 'decionis.secret.decionis_site_key'] as $key) {
+    $state->delete($key);
+  }
+  $storage = \Drupal::entityTypeManager()->getStorage('key');
+  foreach (['decionis_api_key', 'decionis_site_key'] as $id) {
+    $storage->load($id)?->delete();
+  }
+}
+
+/**
+ * Installs the approval queue (decionis_hold).
+ */
+function decionis_update_10001(): string {
+  $manager = \Drupal::entityDefinitionUpdateManager();
+  if ($manager->getEntityType('decionis_hold') === NULL) {
+    $manager->installEntityType(\Drupal::entityTypeManager()->getDefinition('decionis_hold'));
+    return 'Installed the Decionis approval queue.';
+  }
+  return 'The Decionis approval queue was already installed.';
+}
+
+/**
+ * Installs deferred Shadow observations and replay identity constraints.
+ */
+function decionis_update_10002(): string {
+  Migration::update();
+  return 'Installed deferred Shadow observations and replay identity constraints.';
+}
+
+/**
+ * Preserves connection identity across imports and binds credentials to this site.
+ */
+function decionis_update_10003(): string {
+  return ConnectionMigration::run();
+}

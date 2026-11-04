@@ -1,0 +1,29 @@
+# AgentSafe in front of Fincra, written by drush decionis:gateway-setup.
+# Drupal talks to http://127.0.0.1:{{port}}; AgentSafe holds the Fincra secret key and sets the
+# api-key header on every request it forwards. Checkout creation and payment verification pass
+# straight through; refunds and payouts need a Decionis verdict and a single-use grant.
+version: 1
+gateway:
+  listen: "127.0.0.1:{{port}}"
+  upstream: "{{upstream}}"
+  upstreamCredential:
+    header: api-key
+    file: "{{credential_file}}"
+authority:
+  endpoint: "{{authority}}"
+  tenantId: "{{org_id}}"
+  # Watch first: shadow until refunds and payouts are enforced alongside the module's refund gate.
+  mode: {{mode}}
+  failurePolicy: failClosed
+  timeoutMs: 4000
+interception:
+  http: true
+  unmatched: passthrough
+  routes:
+    - path: /collections/refund
+      action: fincra.refund
+      methods: [POST]
+    - path: /disbursements/**
+      action: fincra.payout
+      methods: [POST]
+{{presence}}

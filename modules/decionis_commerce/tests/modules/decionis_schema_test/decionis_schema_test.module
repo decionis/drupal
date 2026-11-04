@@ -1,0 +1,18 @@
+<?php
+
+/**
+ * @file
+ * Creates a table in the middle of a sandbox run, once armed.
+ */
+
+declare(strict_types=1);
+
+/**
+ * Implements hook_ENTITY_TYPE_insert() for commerce_store.
+ */
+function decionis_schema_test_commerce_store_insert(): void {
+  $schema = \Drupal::database()->schema();
+  if (\Drupal::state()->get('decionis_schema_test.armed') && !$schema->tableExists('decionis_schema_probe')) {
+    $schema->createTable('decionis_schema_probe', ['fields' => ['id' => ['type' => 'int', 'not null' => TRUE]]]);
+  }
+}

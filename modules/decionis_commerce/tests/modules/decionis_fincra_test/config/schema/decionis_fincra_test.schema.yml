@@ -1,0 +1,21 @@
+commerce_payment.commerce_payment_gateway.plugin.fincra_standard:
+  type: commerce_payment_gateway_configuration
+  mapping:
+    secret_key_test:
+      type: string
+      label: 'Test secret key'
+    secret_key_live:
+      type: string
+      label: 'Live secret key'
+    public_key_test:
+      type: string
+      label: 'Test public key'
+    public_key_live:
+      type: string
+      label: 'Live public key'
+    api_base_url:
+      type: string
+      label: 'API base URL'
+    secret_key_held_by_gateway:
+      type: boolean
+      label: 'Secret key held by the gateway'

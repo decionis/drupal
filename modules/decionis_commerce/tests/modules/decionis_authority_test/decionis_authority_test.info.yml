@@ -1,0 +1,8 @@
+name: 'Decionis authority test'
+type: module
+description: 'Answers every check with the bundled demo authority, so forms can be driven over HTTP. For tests only.'
+package: Testing
+core_version_requirement: ^10.3 || ^11
+hidden: true
+dependencies:
+  - decionis:decionis_commerce

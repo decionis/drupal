@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<ruleset name="decionis">
+  <description>Drupal coding standards for Decionis.</description>
+  <file>.</file>
+  <arg name="extensions" value="php,module,install,inc,yml"/>
+  <exclude-pattern>vendor/*</exclude-pattern>
+  <rule ref="Drupal">
+    <!-- Repository naming (AGENTS.md, rules/coding.rules.md): one-word names, no type suffixes. -->
+    <exclude name="Drupal.Classes.InterfaceName.InterfaceSuffix"/>
+    <exclude name="Drupal.Arrays.Array.LongLineDeclaration"/>
+    <exclude name="Drupal.Files.LineLength.TooLong"/>
+  </rule>
+  <rule ref="DrupalPractice">
+    <!-- Form validation callbacks and procedural hook shims are static: no container injection. -->
+    <exclude name="DrupalPractice.Objects.GlobalDrupal.GlobalDrupal"/>
+  </rule>
+</ruleset>

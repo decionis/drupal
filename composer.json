@@ -1,0 +1,21 @@
+{
+  "name": "drupal/decionis",
+  "description": "Local store estimates and Commerce Gate policy checks for Drupal, starting in Shadow Mode.",
+  "type": "drupal-module",
+  "license": "GPL-2.0-or-later",
+  "homepage": "https://decionis.com",
+  "require": {
+    "php": ">=8.1",
+    "ext-curl": "*",
+    "ext-sodium": "*",
+    "decionis/php-client": "^0.1.0",
+    "drupal/core": "^10.3 || ^11",
+    "drupal/key": "^1.20"
+  },
+  "suggest": {
+    "drupal/commerce": "decionis_commerce gates refunds, prices, promotions, orders and stock (^2.41 || ^3.3.13)."
+  },
+  "conflict": {
+    "drupal/commerce": "<2.41 || >=3.0 <3.3.13"
+  }
+}

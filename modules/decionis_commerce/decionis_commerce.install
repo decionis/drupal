@@ -1,0 +1,73 @@
+<?php
+
+/**
+ * @file
+ * Status report for Decionis Commerce.
+ */
+
+declare(strict_types=1);
+
+use Drupal\decionis_commerce\Sandbox\Wiring;
+use Drupal\decionis_commerce\Map\CostFields;
+use Drupal\decionis_commerce\Report\Coverage;
+use Drupal\Core\Url;
+use Drupal\decionis_commerce\Gateway\Watchdog;
+
+/**
+ * Implements hook_install().
+ */
+function decionis_commerce_install(): void {
+  \Drupal::service(CostFields::class)->ensure();
+  \Drupal::messenger()->addStatus(t('See your own store history with the <a href=":url">Store X-ray</a>. No account is needed and nothing leaves this site.', [':url' => Url::fromUserInput('/admin/commerce/decionis/x-ray')->toString()]));
+}
+
+/**
+ * Implements hook_requirements().
+ *
+ * An action whose hook point is not wired runs unchecked, and nothing else on
+ * the site would say so.
+ */
+function decionis_commerce_requirements(string $phase): array {
+  if ($phase !== 'runtime') {
+    return [];
+  }
+  $wiring = \Drupal::service(Wiring::class)->check();
+  $inactive = array_keys(array_filter($wiring['points'], static fn (bool $active): bool => !$active));
+  $requirements['decionis_commerce_wiring'] = [
+    'title' => 'Commerce Gate hook points',
+    'value' => $inactive === [] ? 'All active' : 'Not checking: ' . implode(', ', $inactive),
+    'severity' => $inactive === [] ? REQUIREMENT_OK : REQUIREMENT_ERROR,
+    'description' => $inactive === [] ? '' : 'These actions run unchecked. Rebuild the caches (drush cr), then run drush decionis:sandbox --authority=local.',
+  ];
+  if ($wiring['overrides'] !== []) {
+    $requirements['decionis_commerce_overrides'] = [
+      'title' => 'Commerce Gate coverage',
+      'value' => implode('; ', $wiring['overrides']),
+      'severity' => REQUIREMENT_WARNING,
+      'description' => 'Custom code here could bypass the checks. Run drush decionis:sandbox --authority=local to see what it reports.',
+    ];
+  }
+  $coverage = \Drupal::service(Coverage::class)->totals();
+  $requirements['decionis_commerce_cost'] = [
+    'title' => 'Commerce Gate cost coverage',
+    'value' => t('@variations% of variations (@costed/@total); @lines% of order lines in the last 90 days (@costed_lines/@total_lines).', [
+      '@variations' => $coverage['variations']['percent'],
+      '@costed' => $coverage['variations']['costed'],
+      '@total' => $coverage['variations']['total'],
+      '@lines' => $coverage['order_lines']['percent'],
+      '@costed_lines' => $coverage['order_lines']['costed'],
+      '@total_lines' => $coverage['order_lines']['total'],
+    ]),
+    'severity' => $coverage['variations']['total'] > 0 && $coverage['variations']['costed'] === $coverage['variations']['total'] ? REQUIREMENT_OK : REQUIREMENT_WARNING,
+    'description' => t('Costs must be recorded in the sale currency. Unknown or mismatched costs remain not covered.'),
+  ];
+  return $requirements + \Drupal::service(Watchdog::class)->requirements();
+}
+
+/**
+ * Adds an editable cost field to every existing variation type.
+ */
+function decionis_commerce_update_10001(): string {
+  \Drupal::service(CostFields::class)->ensure();
+  return 'Added editable cost fields to every product variation type.';
+}

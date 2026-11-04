@@ -1,0 +1,78 @@
+From 85aa83fa2ae054652d6790293aa4e1ed11b94065 Mon Sep 17 00:00:00 2001
+From: Festus B. Jejelowo <mail.festus@gmail.com>
+Date: Mon, 2 Nov 2026 20:28:49 +0100
+Subject: [PATCH 3/3] Record a failed Fincra payment as voided, not refunded
+
+onReturn mapped Fincra's failed status to the refunded payment state, so a
+failed charge looked like money paid and returned, and checkout carried on to
+place the order. A failed charge is now recorded as a voided authorization, and
+a failed or abandoned charge sends the customer back to pay instead of placing
+the order.
+---
+ .../PaymentGateway/FincraStandard.php         |  9 ++++++-
+ tests/src/Unit/StatusMappingTest.php          | 26 +++++++++++++++++++
+ 2 files changed, 34 insertions(+), 1 deletion(-)
+ create mode 100644 tests/src/Unit/StatusMappingTest.php
+
+diff --git a/src/Plugin/Commerce/PaymentGateway/FincraStandard.php b/src/Plugin/Commerce/PaymentGateway/FincraStandard.php
+index 54ed52e..dafe398 100644
+--- a/src/Plugin/Commerce/PaymentGateway/FincraStandard.php
++++ b/src/Plugin/Commerce/PaymentGateway/FincraStandard.php
+@@ -324,6 +324,13 @@ class FincraStandard extends OffsitePaymentGatewayBase implements FincraStandard
+       $payment->setState($status_mapping[$remote_state]);
+     }
+     $payment->save();
++
++    // A failed or abandoned charge took no money: keep the record, but do not
++    // let checkout place the order as if it were paid.
++    if (in_array($remote_state, ['failed', 'abandoned'], TRUE)) {
++      $this->messenger()->addError($this->t('Your payment with Fincra did not go through. Please try again.'));
++      throw new PaymentGatewayException("Fincra reported the payment as $remote_state for order ID - $order_id.");
++    }
+   }
+ 
+   /**
+@@ -356,7 +363,7 @@ class FincraStandard extends OffsitePaymentGatewayBase implements FincraStandard
+     $mapping = [
+       'success' => 'completed',
+       'abandoned' => 'authorization_voided',
+-      'failed' => 'refunded',
++      'failed' => 'authorization_voided',
+     ];
+     // If a status was passed, return its corresponding payment state.
+     if (isset($status) && isset($mapping[$status])) {
+diff --git a/tests/src/Unit/StatusMappingTest.php b/tests/src/Unit/StatusMappingTest.php
+new file mode 100644
+index 0000000..5d43140
+--- /dev/null
++++ b/tests/src/Unit/StatusMappingTest.php
+@@ -0,0 +1,26 @@
++<?php
++
++namespace Drupal\Tests\commerce_fincra\Unit;
++
++use Drupal\commerce_fincra\Plugin\Commerce\PaymentGateway\FincraStandard;
++use Drupal\Tests\UnitTestCase;
++
++/**
++ * A failed Fincra payment is never recorded as a refund.
++ *
++ * @group commerce_fincra
++ */
++class StatusMappingTest extends UnitTestCase {
++
++  /**
++   * Tests the mapping of Fincra statuses to payment states.
++   */
++  public function testFailedIsNotRefunded(): void {
++    $gateway = (new \ReflectionClass(FincraStandard::class))->newInstanceWithoutConstructor();
++    $this->assertSame('completed', $gateway->getStatusMapping('success'));
++    $this->assertSame('authorization_voided', $gateway->getStatusMapping('failed'));
++    $this->assertSame('authorization_voided', $gateway->getStatusMapping('abandoned'));
++    $this->assertNotContains('refunded', $gateway->getStatusMapping());
++  }
++
++}
+-- 
+2.49.0
+

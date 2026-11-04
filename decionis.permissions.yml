@@ -1,0 +1,11 @@
+administer decionis:
+  title: 'Administer Commerce Gate'
+  description: 'Connect the site to Commerce Gate, choose Shadow or Enforce, and set failure policies.'
+  restrict access: true
+view decionis decisions:
+  title: 'View Commerce Gate decisions'
+  description: 'See the decision log, Dossier links and the CSV export.'
+approve decionis holds:
+  title: 'Approve held actions'
+  description: 'Open held actions in Presence and run an approved action once.'
+  restrict access: true

@@ -1,0 +1,67 @@
+services:
+  _defaults:
+    autowire: true
+  logger.channel.decionis:
+    parent: logger.channel_base
+    arguments: ['decionis']
+  Drupal\decionis\Gate\Settings: ~
+  Drupal\decionis\Gate\Credentials:
+    arguments:
+      $keys: '@key.repository'
+      $keyValueFactory: '@keyvalue'
+  Drupal\decionis\Gate\Remote: ~
+  Drupal\decionis\Gate\Authority: '@Drupal\decionis\Gate\Remote'
+  Drupal\decionis\Gate\Ledger:
+    arguments:
+      $logger: '@logger.channel.decionis'
+      $settings: '@Drupal\decionis\Gate\Settings'
+  Drupal\decionis\Gate\Deferred:
+    arguments:
+      $queues: '@queue'
+      $user: '@current_user'
+      $time: '@datetime.time'
+  Drupal\decionis\Gate\Gate:
+    arguments:
+      $holds: '@?Drupal\decionis\Gate\Holds'
+      $deferred: '@Drupal\decionis\Gate\Deferred'
+  Drupal\decionis\Notification\Nudges:
+    arguments:
+      $user: '@current_user'
+  Drupal\decionis\Notification\Digest:
+    arguments:
+      $keyValue: '@keyvalue'
+      $lock: '@lock'
+      $mailManager: '@plugin.manager.mail'
+      $time: '@datetime.time'
+  Drupal\decionis\EventSubscriber\ShadowSubscriber:
+    tags:
+      - { name: event_subscriber }
+  Drupal\decionis\Connect\SiteKey: ~
+  Drupal\decionis\Connect\Binding:
+    arguments:
+      $keyValueFactory: '@keyvalue'
+  Drupal\decionis\Connect\KeyChanges:
+    tags:
+      - { name: event_subscriber }
+  Drupal\decionis\Connect\Connector:
+    arguments:
+      $http: null
+  Drupal\decionis\Report\Summary: ~
+  Drupal\decionis\Report\Plan: ~
+  Drupal\decionis\Report\Activity: ~
+  Drupal\decionis\Report\Evidence: ~
+  Drupal\decionis\Report\Protection: ~
+  Drupal\decionis\Approval\Intents: ~
+  Drupal\decionis\Approval\AgentSafe:
+    arguments:
+      $http: null
+  Drupal\decionis\Approval\Grants: '@Drupal\decionis\Approval\AgentSafe'
+  Drupal\decionis\Approval\Approvals:
+    arguments:
+      $logger: '@logger.channel.decionis'
+    tags:
+      - { name: service_collector, tag: decionis.executor, call: addExecutor }
+  Drupal\decionis\Gate\Holds: '@Drupal\decionis\Approval\Approvals'
+  Drupal\decionis\Hook\CoreHooks:
+    arguments:
+      $logger: '@logger.channel.decionis'

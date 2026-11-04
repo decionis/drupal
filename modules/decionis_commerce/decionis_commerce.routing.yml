@@ -1,0 +1,7 @@
+decionis_commerce.xray:
+  path: '/admin/commerce/decionis/x-ray'
+  defaults:
+    _form: '\Drupal\decionis_commerce\Form\XrayForm'
+    _title: 'Store X-ray'
+  requirements:
+    _permission: 'administer decionis'

@@ -1,0 +1,5 @@
+decionis_commerce.xray:
+  title: 'Store X-ray'
+  description: 'An estimate from your own store history, entirely on this site.'
+  route_name: decionis_commerce.xray
+  parent: system.admin_reports

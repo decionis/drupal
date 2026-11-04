@@ -1,0 +1,3 @@
+services:
+  Drupal\decionis\Gate\Authority:
+    class: Drupal\decionis_commerce\Sandbox\Local

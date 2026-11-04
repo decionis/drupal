@@ -1,0 +1,20 @@
+# Deprecation notices raised on Drupal 10 by Drupal Commerce's own shipped
+# configuration and code while the tests install it and open its forms, never
+# by this module: it ships no views, no field formatters, no render calls and
+# no form elements. CI appends these to core's own .deprecation-ignore.txt, so
+# any other notice, this module's included, still fails the run.
+
+# Commerce's views and displays use the timestamp formatter without the
+# settings Drupal 10.1 added.
+%^Using the 'timestamp' formatter plugin\s+without the 'tooltip' and 'time_diff' settings is deprecated in drupal:10\.1\.0%
+
+# Commerce 2's views still carry numeric arguments for entity reference
+# fields, which Drupal 10.3 converts as the views are installed.
+%^The update to convert "numeric" arguments to "entity_target_id" for entity reference fields for view "commerce_[a-z_]+" is deprecated in drupal:10\.3\.0%
+
+# Commerce 2 renders with Renderer::renderPlain().
+%^Renderer::renderPlain\(\) is deprecated in drupal:10\.3\.0%
+
+# Commerce 2's price form element extends FormElement, and the store's real
+# refund form renders it.
+%^\\Drupal\\Core\\Render\\Element\\FormElement::[A-Za-z]+\(\) is deprecated in drupal:10\.3\.0%

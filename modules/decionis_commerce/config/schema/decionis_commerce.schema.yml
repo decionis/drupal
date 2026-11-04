@@ -1,0 +1,59 @@
+decionis_commerce.settings:
+  type: config_object
+  label: 'Decionis Commerce settings'
+  mapping:
+    cost_field:
+      type: string
+      label: 'Variation field holding the unit cost (a commerce_price or decimal field)'
+    replay_days:
+      type: integer
+      label: 'Days the replay looks back'
+    replay_concurrency:
+      type: integer
+      label: 'Maximum concurrent replay requests, one to eight'
+    limits:
+      type: sequence
+      label: 'Suggested limits by currency'
+      sequence:
+        type: decionis_commerce.currency_limits
+
+decionis_commerce.currency_limits:
+  type: mapping
+  label: 'Limits for one currency'
+  mapping:
+    refund_limit:
+      type: float
+      label: 'Unattended refund limit in this currency'
+    margin_floor:
+      type: float
+      label: 'Margin floor percent'
+    stacking_ceiling:
+      type: float
+      label: 'Stacked discount ceiling percent'
+    repeat_limit:
+      type: integer
+      label: 'Repeated refund count requiring review'
+    source:
+      type: string
+      label: 'How these limits were chosen'
+    defaults:
+      type: sequence
+      label: 'Limits using documented starting points'
+      sequence:
+        type: string
+    findings:
+      type: mapping
+      label: 'Local findings behind the limits'
+      mapping:
+        refund_limit:
+          type: string
+          label: 'Refund findings'
+        margin_floor:
+          type: string
+          label: 'Margin findings'
+        stacking_ceiling:
+          type: string
+          label: 'Stacking findings'
+        repeat_limit:
+          type: string
+          label: 'Repeated refund findings'

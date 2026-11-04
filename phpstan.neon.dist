@@ -1,0 +1,34 @@
+parameters:
+  level: 5
+  # One config serves Drupal 10 and 11, whose analysers report different
+  # things; an ignore that one of them never needs is not an error.
+  reportUnmatchedIgnoredErrors: false
+  paths:
+    - .
+  excludePaths:
+    - vendor (?)
+  ignoreErrors:
+    # Form validation callbacks, hook classes and procedural hook shims run
+    # outside container injection.
+    - identifier: globalDrupalDependencyInjection.useDependencyInjection
+    -
+      message: '#\\Drupal calls should be avoided in classes#'
+      reportUnmatched: false
+    # The stock subscriber is registered only when Commerce Stock is installed.
+    -
+      message: '#Drupal\\commerce_stock_local\\#'
+      reportUnmatched: false
+    # Drupal 10 reads the entity annotations; the attributes are for 11.
+    -
+      message: '#Attribute class Drupal\\Core\\Entity\\Attribute\\ContentEntityType does not exist#'
+      reportUnmatched: false
+    # Commerce documents getEndDate() and getOriginal() as never null; both are
+    # null in practice (no end date; Drupal 10 has no getOriginal()).
+    - identifier: nullsafe.neverNull
+    - identifier: function.alreadyNarrowedType
+    - identifier: notIdentical.alwaysTrue
+    - identifier: instanceof.alwaysTrue
+    # Drupal 10 has neither hook attribute; they are only read on 11.1+.
+    -
+      message: '#Attribute class Drupal\\Core\\Hook\\Attribute\\(Legacy)?Hook does not exist#'
+      reportUnmatched: false

@@ -1,0 +1,24 @@
+mode: shadow
+actions:
+  refund_request: inherit
+  price_change: inherit
+  promotion_change: inherit
+  order_acceptance: inherit
+  inventory_mutation: inherit
+  agent_tool: shadow
+failure:
+  refund_request: closed
+  price_change: closed
+  promotion_change: closed
+  order_acceptance: open
+  inventory_mutation: closed
+  agent_tool: closed
+budget_ms: 120
+api_base_url: 'https://api.decionis.com'
+connect_url: 'https://api.decionis.com'
+jwks_url: 'https://api.decionis.com/v1/.well-known/decision-dossier-jwks.json'
+policy_version: ''
+digest:
+  enabled: false
+  recipients: []
+  day: 0

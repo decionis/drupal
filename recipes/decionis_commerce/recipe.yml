@@ -1,0 +1,11 @@
+name: 'Decionis Commerce'
+description: 'Checks refunds, prices, promotions and orders against your Decionis policy in Shadow Mode, and adds a cost field to product variations so margin rules have a cost base.'
+type: 'Commerce'
+install:
+  - key
+  - decionis
+  - decionis_commerce
+config:
+  actions:
+    decionis_commerce.settings:
+      decionisEnsureCostFields: true

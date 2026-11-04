@@ -1,0 +1,249 @@
+From 9cdbf4877f07eb14e55f723a8d873b666bb35062 Mon Sep 17 00:00:00 2001
+From: Festus B. Jejelowo <mail.festus@gmail.com>
+Date: Mon, 2 Nov 2026 20:28:10 +0100
+Subject: [PATCH 1/3] Make the Fincra API base URL configurable
+
+Requests went to a hardcoded Fincra host per mode. A gateway beside the site,
+such as an AgentSafe proxy holding the Fincra credential, needs the module to
+send its requests there instead. The new api_base_url setting accepts HTTPS, or
+HTTP on the loopback interface only; empty keeps Fincra's own API.
+---
+ .../schema/commerce_fincra_payment.schema.yml |  3 +
+ .../PaymentGateway/FincraStandard.php         | 40 +++++++++
+ .../FincraStandardInterface.php               |  9 ++
+ src/Service/FincraCheckoutRedirectService.php |  4 +-
+ tests/src/Unit/ApiBaseUrlTest.php             | 83 +++++++++++++++++++
+ 5 files changed, 137 insertions(+), 2 deletions(-)
+ create mode 100644 tests/src/Unit/ApiBaseUrlTest.php
+
+diff --git a/config/schema/commerce_fincra_payment.schema.yml b/config/schema/commerce_fincra_payment.schema.yml
+index bfe7910..2a68e86 100644
+--- a/config/schema/commerce_fincra_payment.schema.yml
++++ b/config/schema/commerce_fincra_payment.schema.yml
+@@ -22,3 +22,6 @@ commerce_payment.commerce_payment_gateway.plugin.fincra_standard:
+     debug_payload:
+       type: boolean
+       label: 'Debug payload'
++    api_base_url:
++      type: string
++      label: 'API base URL'
+diff --git a/src/Plugin/Commerce/PaymentGateway/FincraStandard.php b/src/Plugin/Commerce/PaymentGateway/FincraStandard.php
+index 8b91572..7b2d8de 100644
+--- a/src/Plugin/Commerce/PaymentGateway/FincraStandard.php
++++ b/src/Plugin/Commerce/PaymentGateway/FincraStandard.php
+@@ -37,6 +37,17 @@ class FincraStandard extends OffsitePaymentGatewayBase implements FincraStandard
+     return $this->configuration["secret_key_{$mode}"] ?? '';
+   }
+ 
++  /**
++   * {@inheritdoc}
++   */
++  public function getApiBaseUrl(): string {
++    $configured = rtrim((string) ($this->configuration['api_base_url'] ?? ''), '/');
++    if ($configured !== '') {
++      return $configured;
++    }
++    return $this->getMode() === 'live' ? 'https://api.fincra.com' : 'https://sandboxapi.fincra.com';
++  }
++
+   /**
+    * {@inheritdoc}
+    */
+@@ -78,6 +89,7 @@ class FincraStandard extends OffsitePaymentGatewayBase implements FincraStandard
+         'business_id'     => '',
+         'webhook_key'     => '',
+         'debug_payload'   => '',
++        'api_base_url'    => '',
+       ] + parent::defaultConfiguration();
+   }
+ 
+@@ -171,6 +183,13 @@ class FincraStandard extends OffsitePaymentGatewayBase implements FincraStandard
+       ]),
+     ];
+ 
++    $form['api_base_url'] = [
++      '#type' => 'textfield',
++      '#title' => $this->t('API base URL'),
++      '#description' => $this->t('Leave empty to use Fincra directly. Set it to a gateway that forwards to Fincra, such as an AgentSafe proxy on this server (http://127.0.0.1:8787).'),
++      '#default_value' => $this->configuration['api_base_url'] ?? '',
++    ];
++
+     $form['debug_payload'] = [
+       '#type' => 'checkbox',
+       '#title' => $this->t('Debug payload'),
+@@ -190,6 +209,11 @@ class FincraStandard extends OffsitePaymentGatewayBase implements FincraStandard
+       $values = $form_state->getValue($form['#parents']);
+       $mode = $values['mode'];
+ 
++      $base_url = trim((string) ($values['api_base_url'] ?? ''));
++      if ($base_url !== '' && !static::isAllowedBaseUrl($base_url)) {
++        $form_state->setError($form['api_base_url'], $this->t('The API base URL must be HTTPS, or HTTP on this server (127.0.0.1 or localhost) for a local proxy.'));
++      }
++
+       // Get active keys.
+       $secret_key = $values["secret_key_{$mode}"];
+       $public_key = $values["public_key_{$mode}"];
+@@ -223,6 +247,7 @@ class FincraStandard extends OffsitePaymentGatewayBase implements FincraStandard
+       $this->configuration['webhook_key']     = $values['webhook_key'];
+       $this->configuration['business_id']     = $values['business_id'];
+       $this->configuration['debug_payload']   = $values['debug_payload'];
++      $this->configuration['api_base_url']    = rtrim(trim((string) ($values['api_base_url'] ?? '')), '/');
+     }
+   }
+ 
+@@ -284,6 +309,21 @@ class FincraStandard extends OffsitePaymentGatewayBase implements FincraStandard
+     $this->messenger()->addMessage($this->t('Payment canceled.'));
+   }
+ 
++  /**
++   * {@inheritdoc}
++   */
++  /**
++   * Checks an API base URL: HTTPS, or HTTP on the loopback interface only.
++   */
++  public static function isAllowedBaseUrl(string $url): bool {
++    $parts = parse_url($url);
++    if ($parts === FALSE || empty($parts['host']) || isset($parts['user']) || isset($parts['pass']) || isset($parts['query']) || isset($parts['fragment'])) {
++      return FALSE;
++    }
++    $scheme = $parts['scheme'] ?? '';
++    return $scheme === 'https' || ($scheme === 'http' && in_array($parts['host'], ['127.0.0.1', 'localhost', '[::1]'], TRUE));
++  }
++
+   /**
+    * {@inheritdoc}
+    */
+diff --git a/src/Plugin/Commerce/PaymentGateway/FincraStandardInterface.php b/src/Plugin/Commerce/PaymentGateway/FincraStandardInterface.php
+index 55c7081..e64dd19 100644
+--- a/src/Plugin/Commerce/PaymentGateway/FincraStandardInterface.php
++++ b/src/Plugin/Commerce/PaymentGateway/FincraStandardInterface.php
+@@ -17,6 +17,15 @@ interface FincraStandardInterface extends OffsitePaymentGatewayInterface {
+    */
+   public function getSecretKey();
+ 
++  /**
++   * Gets the API base URL requests go to.
++   *
++   * @return string
++   *   The configured base URL without a trailing slash, or Fincra's own API
++   *   for the gateway's mode when none is configured.
++   */
++  public function getApiBaseUrl(): string;
++
+   /**
+    * Get the Fincra API Public key set for the payment gateway.
+    *
+diff --git a/src/Service/FincraCheckoutRedirectService.php b/src/Service/FincraCheckoutRedirectService.php
+index 27b3f6d..dfff487 100644
+--- a/src/Service/FincraCheckoutRedirectService.php
++++ b/src/Service/FincraCheckoutRedirectService.php
+@@ -48,7 +48,7 @@ class FincraCheckoutRedirectService {
+    * {@inheritdoc}
+    */
+   public function createCheckoutRedirect($params, FincraStandardInterface $gateway) {
+-    $baseUrl = $this->getBaseUrl($gateway->getMode());
++    $baseUrl = $gateway->getApiBaseUrl();
+ 
+     try {
+       $response = $this->httpClient->request('POST', $baseUrl . '/checkout/payments', [
+@@ -78,7 +78,7 @@ class FincraCheckoutRedirectService {
+       throw new \InvalidArgumentException('Missing the required parameter $reference when calling verifyTransaction');
+     }
+ 
+-    $baseUrl = $this->getBaseUrl($gateway->getMode());
++    $baseUrl = $gateway->getApiBaseUrl();
+ 
+     try {
+       $response = $this->httpClient->request('GET', $baseUrl . '/checkout/payments/merchant-reference/' . $reference, [
+diff --git a/tests/src/Unit/ApiBaseUrlTest.php b/tests/src/Unit/ApiBaseUrlTest.php
+new file mode 100644
+index 0000000..f4d6107
+--- /dev/null
++++ b/tests/src/Unit/ApiBaseUrlTest.php
+@@ -0,0 +1,83 @@
++<?php
++
++namespace Drupal\Tests\commerce_fincra\Unit;
++
++use Drupal\commerce_fincra\Plugin\Commerce\PaymentGateway\FincraStandard;
++use Drupal\commerce_fincra\Plugin\Commerce\PaymentGateway\FincraStandardInterface;
++use Drupal\commerce_fincra\Service\FincraCheckoutRedirectService;
++use Drupal\Core\Logger\LoggerChannelFactoryInterface;
++use Drupal\Core\Logger\LoggerChannelInterface;
++use Drupal\Tests\UnitTestCase;
++use GuzzleHttp\Client;
++use GuzzleHttp\Handler\MockHandler;
++use GuzzleHttp\HandlerStack;
++use GuzzleHttp\Middleware;
++use GuzzleHttp\Psr7\Response;
++
++/**
++ * Requests go to the configured API base URL, so a proxy can front Fincra.
++ *
++ * @group commerce_fincra
++ */
++class ApiBaseUrlTest extends UnitTestCase {
++
++  /**
++   * The requests the mocked HTTP client received.
++   *
++   * @var array
++   */
++  protected array $history = [];
++
++  /**
++   * Builds the service over a mocked HTTP client answering $responses.
++   */
++  protected function service(array $responses): FincraCheckoutRedirectService {
++    $stack = HandlerStack::create(new MockHandler($responses));
++    $stack->push(Middleware::history($this->history));
++    $logger = $this->createMock(LoggerChannelFactoryInterface::class);
++    $logger->method('get')->willReturn($this->createMock(LoggerChannelInterface::class));
++    return new FincraCheckoutRedirectService(new Client(['handler' => $stack]), $logger);
++  }
++
++  /**
++   * A gateway with the given base URL and secret key.
++   */
++  protected function gateway(string $baseUrl, string $secretKey = 'aaaaaaaaaaaaaaaa'): FincraStandardInterface {
++    $gateway = $this->createMock(FincraStandardInterface::class);
++    $gateway->method('getApiBaseUrl')->willReturn($baseUrl);
++    $gateway->method('getSecretKey')->willReturn($secretKey);
++    $gateway->method('getPublicKey')->willReturn('pk_test_0123456789');
++    $gateway->method('getBusinessId')->willReturn('business-1');
++    $gateway->method('getMode')->willReturn('test');
++    return $gateway;
++  }
++
++  /**
++   * Tests that checkout and verification use the configured base URL.
++   */
++  public function testRequestsUseTheConfiguredBaseUrl(): void {
++    $service = $this->service([
++      new Response(200, [], '{"status":true,"data":{"link":"https://checkout.fincra.com/x"}}'),
++      new Response(200, [], '{"status":true,"data":{"status":"success"}}'),
++    ]);
++    $gateway = $this->gateway('http://127.0.0.1:8787');
++    $service->createCheckoutRedirect(['amount' => 100], $gateway);
++    $service->verifyTransaction('ref-1', $gateway);
++    $this->assertSame('http://127.0.0.1:8787/checkout/payments', (string) $this->history[0]['request']->getUri());
++    $this->assertSame('http://127.0.0.1:8787/checkout/payments/merchant-reference/ref-1', (string) $this->history[1]['request']->getUri());
++  }
++
++  /**
++   * Tests which base URLs the form accepts.
++   */
++  public function testOnlyHttpsOrALoopbackProxyIsAccepted(): void {
++    $this->assertTrue(FincraStandard::isAllowedBaseUrl('https://api.fincra.com'));
++    $this->assertTrue(FincraStandard::isAllowedBaseUrl('http://127.0.0.1:8787'));
++    $this->assertTrue(FincraStandard::isAllowedBaseUrl('http://localhost:8787'));
++    $this->assertFalse(FincraStandard::isAllowedBaseUrl('http://proxy.example.com'));
++    $this->assertFalse(FincraStandard::isAllowedBaseUrl('https://user:pass@api.fincra.com'));
++    $this->assertFalse(FincraStandard::isAllowedBaseUrl('https://api.fincra.com/?x=1'));
++    $this->assertFalse(FincraStandard::isAllowedBaseUrl('ftp://api.fincra.com'));
++  }
++
++}
+-- 
+2.49.0
+

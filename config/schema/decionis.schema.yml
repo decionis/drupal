@@ -1,0 +1,56 @@
+decionis.settings:
+  type: config_object
+  label: 'Decionis settings'
+  mapping:
+    mode:
+      type: string
+      label: 'Store-wide mode (shadow or enforce)'
+    actions:
+      type: sequence
+      label: 'Per-action mode (inherit, shadow or enforce)'
+      sequence:
+        type: string
+    failure:
+      type: sequence
+      label: 'Failure policy in Enforce when Decionis cannot decide (open or closed)'
+      sequence:
+        type: string
+    budget_ms:
+      type: integer
+      label: 'Checkout latency budget in milliseconds'
+    api_base_url:
+      type: uri
+      label: 'Decionis API origin'
+    connect_url:
+      type: uri
+      label: 'Decionis connect API origin'
+    jwks_url:
+      type: uri
+      label: 'Published Decision Dossier key set'
+    org_id:
+      type: string
+      label: 'Workspace (organization) id'
+    api_key:
+      type: string
+      label: 'Key module entry holding the site-scoped API key (the id, never the key)'
+    site_key:
+      type: string
+      label: 'Key module entry holding the site Ed25519 key pair (the id, never the key)'
+    policy_version:
+      type: string
+      label: 'Pinned policy version, empty for the active one'
+    digest:
+      type: mapping
+      label: 'Site-local weekly Shadow digest'
+      mapping:
+        enabled:
+          type: boolean
+          label: 'Send the weekly digest'
+        recipients:
+          type: sequence
+          label: 'Authorized administrator user IDs'
+          sequence:
+            type: integer
+        day:
+          type: integer
+          label: 'Send day, Monday zero through Sunday six'

@@ -1,0 +1,107 @@
+<?php
+
+/**
+ * @file
+ * Procedural hook shims for Drupal 10.
+ *
+ * Drupal 11.1+ runs the same methods
+ * through the attributes on \Drupal\decionis_commerce\Hook\CommerceHooks.
+ */
+
+declare(strict_types=1);
+
+use Drupal\Core\Entity\EntityTypeInterface;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Hook\Attribute\LegacyHook;
+use Drupal\commerce_payment\Entity\PaymentInterface;
+use Drupal\commerce_payment\Entity\PaymentGatewayInterface;
+use Drupal\commerce_product\Entity\ProductVariationTypeInterface;
+use Drupal\decionis_commerce\Hook\CommerceHooks;
+
+/**
+ * Implements hook_ENTITY_TYPE_presave() for commerce_payment_gateway.
+ */
+#[LegacyHook]
+function decionis_commerce_commerce_payment_gateway_presave(PaymentGatewayInterface $gateway): void {
+  \Drupal::service(CommerceHooks::class)->gatewayPresave($gateway);
+}
+
+/**
+ * Implements hook_cron().
+ */
+#[LegacyHook]
+function decionis_commerce_cron(): void {
+  \Drupal::service(CommerceHooks::class)->cron();
+}
+
+/**
+ * Implements hook_mail().
+ */
+#[LegacyHook]
+function decionis_commerce_mail(string $key, array &$message, array $params): void {
+  \Drupal::service(CommerceHooks::class)->mail($key, $message, $params);
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_insert() for commerce_product_variation_type.
+ */
+#[LegacyHook]
+function decionis_commerce_commerce_product_variation_type_insert(ProductVariationTypeInterface $type): void {
+  \Drupal::service(CommerceHooks::class)->variationTypeInserted($type);
+}
+
+/**
+ * Implements hook_entity_base_field_info_alter().
+ */
+#[LegacyHook]
+function decionis_commerce_entity_base_field_info_alter(array &$fields, EntityTypeInterface $entity_type): void {
+  \Drupal::service(CommerceHooks::class)->baseFields($fields, $entity_type);
+}
+
+/**
+ * Implements hook_entity_type_alter().
+ */
+#[LegacyHook]
+function decionis_commerce_entity_type_alter(array &$entity_types): void {
+  \Drupal::service(CommerceHooks::class)->entityTypes($entity_types);
+}
+
+/**
+ * Implements hook_commerce_inline_form_PLUGIN_ID_alter() for coupon_redemption.
+ */
+#[LegacyHook]
+function decionis_commerce_commerce_inline_form_coupon_redemption_alter(array &$inline_form, FormStateInterface $form_state, array &$complete_form): void {
+  \Drupal::service(CommerceHooks::class)->couponForm($inline_form, $form_state, $complete_form);
+}
+
+/**
+ * Implements hook_rebuild().
+ */
+#[LegacyHook]
+function decionis_commerce_rebuild(): void {
+  \Drupal::service(CommerceHooks::class)->rebuild();
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+#[LegacyHook]
+function decionis_commerce_form_alter(array &$form, FormStateInterface $form_state, string $form_id): void {
+  \Drupal::service(CommerceHooks::class)->formAlter($form, $form_state, $form_id);
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_update() for commerce_payment.
+ */
+#[LegacyHook]
+function decionis_commerce_commerce_payment_update(PaymentInterface $payment): void {
+  \Drupal::service(CommerceHooks::class)->paymentUpdate($payment);
+}
+
+/**
+ * Implements hook_decionis_connected().
+ */
+#[LegacyHook]
+function decionis_commerce_decionis_connected(string $org_id): void {
+  \Drupal::service(CommerceHooks::class)->connected($org_id);
+}

@@ -1,0 +1,14 @@
+name: 'Commerce Gate for Drupal Commerce'
+type: module
+description: 'Checks refunds, prices, promotions, orders and stock with Commerce Gate, starting in Shadow Mode.'
+package: 'Commerce Gate'
+core_version_requirement: ^10.3 || ^11
+php: 8.1
+dependencies:
+  - decionis:decionis
+  - commerce:commerce_checkout
+  - commerce:commerce_order
+  - commerce:commerce_payment
+  - commerce:commerce_price
+  - commerce:commerce_product
+  - commerce:commerce_promotion

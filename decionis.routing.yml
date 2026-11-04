@@ -1,0 +1,134 @@
+decionis.settings:
+  path: '/admin/commerce/config/decionis'
+  defaults:
+    _form: '\Drupal\decionis\Form\SettingsForm'
+    _title: 'Commerce Gate'
+  requirements:
+    _permission: 'administer decionis'
+decionis.connect:
+  path: '/admin/commerce/config/decionis/connect'
+  defaults:
+    _form: '\Drupal\decionis\Form\ConnectForm'
+    _title: 'Connect to Commerce Gate'
+  requirements:
+    _permission: 'administer decionis'
+decionis.challenge:
+  path: '/.well-known/decionis-challenge'
+  defaults:
+    _controller: '\Drupal\decionis\Controller\ChallengeController::serve'
+  requirements:
+    # Open by design: Decionis fetches it anonymously while a connect is open.
+    # It serves only a signed one-time proof, and 404 at any other time.
+    _access: 'TRUE'
+  options:
+    no_cache: TRUE
+    _maintenance_access: TRUE
+# The same challenge for web servers that answer /.well-known/ themselves, as
+# the widely used Drupal nginx recipe does.
+decionis.challenge_fallback:
+  path: '/decionis/challenge'
+  defaults:
+    _controller: '\Drupal\decionis\Controller\ChallengeController::serve'
+  requirements:
+    # Open for the same reason as the route above.
+    _access: 'TRUE'
+  options:
+    no_cache: TRUE
+    _maintenance_access: TRUE
+decionis.decisions:
+  path: '/admin/commerce/decionis/decisions'
+  defaults:
+    _controller: '\Drupal\decionis\Controller\DashboardController::view'
+    _title: 'Decisions'
+  requirements:
+    _permission: 'view decionis decisions'
+decionis.verify:
+  path: '/admin/commerce/decionis/decisions/{decision}/verify'
+  defaults:
+    _controller: '\Drupal\decionis\Controller\DashboardController::verify'
+    _title: 'Verify Dossier'
+  requirements:
+    _permission: 'view decionis decisions'
+    decision: '\d+'
+
+decionis.export:
+  path: '/admin/commerce/decionis/decisions/export.csv'
+  defaults:
+    _controller: '\Drupal\decionis\Controller\ExportController::download'
+  requirements:
+    _permission: 'view decionis decisions'
+decionis.dossier:
+  path: '/admin/commerce/decionis/decisions/{decision}/dossier.json'
+  defaults:
+    _controller: '\Drupal\decionis\Controller\DashboardController::download'
+  requirements:
+    _permission: 'view decionis decisions'
+    decision: '\d+'
+decionis.approvals:
+  path: '/admin/commerce/decionis/approvals'
+  defaults:
+    _form: '\Drupal\decionis\Form\ApprovalsForm'
+    _title: 'Pending approvals'
+  requirements:
+    _permission: 'approve decionis holds'
+decionis.enforce:
+  path: '/admin/commerce/decionis/enforce/{action}'
+  defaults:
+    _form: '\Drupal\decionis\Form\EnforceForm'
+    _title: 'Enforce one action'
+  requirements:
+    _permission: 'administer decionis'
+    action: 'refund_request|price_change|promotion_change|order_acceptance|inventory_mutation|agent_tool'
+decionis.checklist:
+  path: '/admin/commerce/decionis/checklist'
+  defaults:
+    _controller: '\Drupal\decionis\Controller\ChecklistController::view'
+    _title: 'Protection checklist'
+  requirements:
+    _permission: 'administer decionis'
+decionis.report:
+  path: '/admin/commerce/decionis/report/{kind}'
+  defaults:
+    _controller: '\Drupal\decionis\Controller\ReportController::view'
+    _title: 'Owner and agency report'
+  requirements:
+    _permission: 'view decionis decisions'
+    kind: 'xray|shadow'
+decionis.report_csv:
+  path: '/admin/commerce/decionis/report/{kind}/export.csv'
+  defaults:
+    _controller: '\Drupal\decionis\Controller\ReportController::csv'
+  requirements:
+    _permission: 'view decionis decisions'
+    kind: 'xray|shadow'
+decionis.sandbox:
+  path: '/admin/commerce/decionis/sandbox'
+  defaults:
+    _form: '\Drupal\decionis_commerce\Form\SandboxForm'
+    _title: 'Local sandbox'
+  requirements:
+    _permission: 'administer decionis'
+    _custom_access: '\Drupal\decionis\Controller\ToolAccess::commerce'
+decionis.cost_import:
+  path: '/admin/commerce/decionis/cost-import'
+  defaults:
+    _form: '\Drupal\decionis_commerce\Form\CostImportForm'
+    _title: 'Import variation costs'
+  requirements:
+    _permission: 'administer decionis'
+    _custom_access: '\Drupal\decionis\Controller\ToolAccess::commerce'
+decionis.gateway_preview:
+  path: '/admin/commerce/decionis/gateway-preview'
+  defaults:
+    _form: '\Drupal\decionis_commerce\Form\GatewayPreviewForm'
+    _title: 'AgentSafe dry-run preview'
+  requirements:
+    _permission: 'administer decionis'
+    _custom_access: '\Drupal\decionis\Controller\ToolAccess::commerce'
+decionis.disconnect:
+  path: '/admin/commerce/config/decionis/disconnect'
+  defaults:
+    _form: '\Drupal\decionis\Form\DisconnectForm'
+    _title: 'Disconnect this site'
+  requirements:
+    _permission: 'administer decionis'
