@@ -5,6 +5,7 @@
 /.gitlab-ci.yml export-ignore
 /phpcs.xml.dist export-ignore
 /phpstan.neon.dist export-ignore
+/Cspell.txt export-ignore
 /PROJECT_PAGE.md export-ignore
 /tests export-ignore
 /modules/decionis_commerce/tests export-ignore

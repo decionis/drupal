@@ -17,13 +17,34 @@ variables:
   _PHPUNIT_CONCURRENT: "0"
   _PHPCS_ALLOW_FAILURE: "0"
   _PHPSTAN_ALLOW_FAILURE: "0"
+  _CSPELL_DICTIONARY: "Cspell.txt"
   SKIP_ESLINT: "1"
   SKIP_STYLELINT: "1"
+
+# Each GitLab job gets a fresh image; Composer artifacts do not carry PHP
+# extensions. The official PHP 8.1 image omits sodium and its source archive.
+.decionis-sodium:
+  - |
+    if ! php -r 'exit(extension_loaded("sodium") ? 0 : 1);'; then
+      # Match the running interpreter before compiling its bundled extension.
+      test "$(php -r 'echo PHP_VERSION;')" = 8.1.34
+      apt-get update
+      apt-get install -y --no-install-recommends $PHPIZE_DEPS libsodium-dev
+      mkdir -p /usr/src
+      curl --fail --location --silent --show-error --retry 3 --max-time 120 https://www.php.net/distributions/php-8.1.34.tar.xz -o /usr/src/php.tar.xz
+      # PHP.net's published SHA-256, matching the official DrupalCI Dockerfile.
+      printf '%s  %s\n' ffa9e0982e82eeaea848f57687b425ed173aa278fe563001310ae2638db5c251 /usr/src/php.tar.xz | sha256sum --check -
+      docker-php-ext-configure sodium --with-sodium
+      docker-php-ext-install -j2 sodium
+    fi
+    php --ri sodium
+    php -r 'exit(function_exists("sodium_crypto_sign_detached") && function_exists("sodium_crypto_sign_verify_detached") ? 0 : 1);'
 
 # These are test dependencies, added before the template builds its Drupal site.
 # Each Commerce variant produces its own vendor tree and Composer lock file.
 .composer-base:
   before_script:
+    - !reference [.decionis-sodium]
     - composer require --dev --no-update --no-interaction "drupal/commerce:$DECIONIS_TEST_COMMERCE" "drush/drush:^12 || ^13"
     - |
       if [ "$DECIONIS_TEST_COMMERCE" = "^3.3.13" ]; then
@@ -48,8 +69,13 @@ composer (commerce 2):
   variables:
     DECIONIS_TEST_COMMERCE: "^2.41"
 
+.phpstan-base:
+  before_script:
+    - !reference [.decionis-sodium]
+
 phpunit:
   before_script:
+    - !reference [.decionis-sodium]
     - export _NODE_VERSION=22.23.2
     - !reference [.check-nvm]
     - |

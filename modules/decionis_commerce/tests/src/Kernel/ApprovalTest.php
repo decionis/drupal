@@ -81,7 +81,7 @@ final class ApprovalTest extends DecionisCommerceTestBase {
   }
 
   /**
-   * Tests that aheld refund runs exactly once and areplay is refused.
+   * Tests that a held refund runs exactly once and a replay is refused.
    */
   public function testHeldRefundRunsExactlyOnceAndReplayIsRefused(): void {
     $approvals = $this->container->get(Approvals::class);
@@ -106,7 +106,7 @@ final class ApprovalTest extends DecionisCommerceTestBase {
   }
 
   /**
-   * Tests that areplayed grant is refused.
+   * Tests that a replayed grant is refused.
    */
   public function testReplayedGrantIsRefused(): void {
     $approvals = $this->container->get(Approvals::class);
@@ -126,7 +126,7 @@ final class ApprovalTest extends DecionisCommerceTestBase {
   }
 
   /**
-   * Tests that achanged action is refused.
+   * Tests that a changed action is refused.
    */
   public function testChangedActionIsRefused(): void {
     $approvals = $this->container->get(Approvals::class);
