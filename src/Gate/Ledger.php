@@ -275,7 +275,7 @@ final class Ledger {
       $transaction = NULL;
     }
     finally {
-      Commit::transaction($transaction);
+      Commit::transaction($transaction, $this->database);
     }
     $matches = $storage->loadByProperties(['replay_key' => $fields['replay_key']]);
     $entry = reset($matches);

@@ -1,8 +1,8 @@
-# Commerce Gate for Drupal changelog
+# Decionis Commerce for Drupal changelog
 
-## Unreleased
+## 0.1.2-beta2
 
-Drupal 12 readiness, from the Project Update Bot report in
+Prepared on 2026-11-20. Drupal 12 readiness, from the Project Update Bot report in
 [#3637364](https://www.drupal.org/project/decionis/issues/3637364).
 
 - Status report entries use the `RequirementSeverity` enum on Drupal 11.2 and later, and the
@@ -24,6 +24,11 @@ Drupal 12 readiness, from the Project Update Bot report in
 - Transactions that are not rolled back are committed with `Transaction::commitOrRelease()`
   where core has it. Drupal 11.5 deprecated committing by letting the object go out of scope,
   and Drupal 13 removes it.
+- Handles already voided by a MySQL schema change are released without attempting another
+  commit, so interrupted sandbox runs can remove their synthetic records. Drupal 11 acceptance
+  now exercises this cleanup on MySQL as well as the existing Drupal 10 coverage.
+- Includes the connection-bound safe-mode integration and updated Decionis Commerce display
+  names. The published package and module names remain unchanged.
 
 ## 0.1.2-beta1 — first Drupal.org public beta
 

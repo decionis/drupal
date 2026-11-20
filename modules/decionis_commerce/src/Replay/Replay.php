@@ -227,7 +227,7 @@ final class Replay {
         unset($transaction);
       }
       else {
-        Commit::transaction($transaction);
+        Commit::transaction($transaction, $this->database);
       }
       $this->entityTypeManager->getStorage('decionis_decision')->resetCache();
     }
@@ -257,7 +257,7 @@ final class Replay {
         unset($transaction);
       }
       else {
-        Commit::transaction($transaction);
+        Commit::transaction($transaction, $this->database);
       }
     }
   }

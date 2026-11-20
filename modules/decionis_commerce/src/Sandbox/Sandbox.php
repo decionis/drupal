@@ -120,7 +120,7 @@ final class Sandbox {
               unset($savepoint);
             }
             else {
-              Commit::transaction($savepoint);
+              Commit::transaction($savepoint, $this->database);
             }
             \Drupal::service('entity.memory_cache')->deleteAll();
           }
@@ -143,7 +143,7 @@ final class Sandbox {
         unset($outer);
       }
       else {
-        Commit::transaction($outer);
+        Commit::transaction($outer, $this->database);
       }
       Quiet::set(FALSE);
       $this->cost->clear();
