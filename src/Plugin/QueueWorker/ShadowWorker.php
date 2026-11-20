@@ -18,11 +18,11 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *
  * @QueueWorker(
  *   id = "decionis_shadow",
- *   title = @Translation("Commerce Gate Shadow evaluations"),
+ *   title = @Translation("Decionis Commerce Shadow evaluations"),
  *   cron = {"time" = 20},
  * )
  */
-#[QueueWorker(id: 'decionis_shadow', title: new TranslatableMarkup('Commerce Gate Shadow evaluations'), cron: ['time' => 20])]
+#[QueueWorker(id: 'decionis_shadow', title: new TranslatableMarkup('Decionis Commerce Shadow evaluations'), cron: ['time' => 20])]
 final class ShadowWorker extends QueueWorkerBase implements ContainerFactoryPluginInterface {
 
   public function __construct(array $configuration, $plugin_id, $plugin_definition, protected Deferred $deferred) {

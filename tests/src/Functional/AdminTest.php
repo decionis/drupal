@@ -8,6 +8,7 @@ use Drupal\decionis\Connect\Connector;
 use Drupal\decionis\Connect\Binding;
 use Drupal\decionis\Gate\Settings;
 use Drupal\Tests\BrowserTestBase;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
 /**
  * Checks permissions and safe disclosure on admin and challenge routes.
@@ -17,6 +18,7 @@ use Drupal\Tests\BrowserTestBase;
  *
  * @group decionis
  */
+#[RunTestsInSeparateProcesses]
 final class AdminTest extends BrowserTestBase {
 
   /**
@@ -62,7 +64,7 @@ final class AdminTest extends BrowserTestBase {
     $session->fieldDisabled('site_url');
     $this->assertStringStartsWith('http', (string) $this->getSession()->getPage()->findField('site_url')?->getValue());
     // Without the terms the form stops before it contacts Decionis.
-    $this->submitForm([], 'Connect to Commerce Gate');
+    $this->submitForm([], 'Connect to Decionis Commerce');
     $session->pageTextContains('field is required');
     $this->assertNull(\Drupal::state()->get(Connector::STATE), 'no connect was started');
   }

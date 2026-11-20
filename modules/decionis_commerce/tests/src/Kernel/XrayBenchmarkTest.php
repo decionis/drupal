@@ -11,12 +11,14 @@ use Drupal\commerce_product\Entity\ProductVariation;
 use Drupal\decionis_commerce\Map\CostFields;
 use Drupal\decionis_commerce\Replay\Replay;
 use Drupal\decionis_commerce\Sandbox\Isolation;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
 /**
  * Reproducible X-ray measurement on 5,000 synthetic NGN orders in every CI row.
  *
  * @group decionis
  */
+#[RunTestsInSeparateProcesses]
 final class XrayBenchmarkTest extends DecionisCommerceTestBase {
 
   /**

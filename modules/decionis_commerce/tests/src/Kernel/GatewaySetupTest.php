@@ -7,6 +7,7 @@ namespace Drupal\Tests\decionis_commerce\Kernel;
 use Drupal\commerce_payment\Entity\PaymentGateway;
 use Drupal\decionis\Gate\Credentials;
 use Drupal\decionis\Connect\Binding;
+use Drupal\decionis\Report\Severity;
 use Drupal\decionis_commerce\Drush\Commands\DecionisCommands;
 use Drupal\decionis_commerce\Gateway\Probe;
 use Drupal\decionis_commerce\Gateway\Custody;
@@ -17,6 +18,7 @@ use Drupal\decionis_commerce\Gateway\Tier;
 use Drupal\decionis_commerce\Gateway\Watchdog;
 use Drupal\Tests\decionis_commerce\Support\RecordingRunner;
 use Drupal\Tests\decionis_commerce\Support\ServerProbe;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 use Symfony\Component\Console\Output\BufferedOutput;
 
 /**
@@ -28,6 +30,7 @@ use Symfony\Component\Console\Output\BufferedOutput;
  *
  * @group decionis
  */
+#[RunTestsInSeparateProcesses]
 final class GatewaySetupTest extends DecionisCommerceTestBase {
 
   private const SECRET = 'fixture-fincra-test-secret';
@@ -489,7 +492,7 @@ final class GatewaySetupTest extends DecionisCommerceTestBase {
       $watchdog = new Watchdog($this->container->get('state'), $this->container->get('entity_type.manager'), $custody, $this->container->get('plugin.manager.mail'), $this->container->get('logger.factory'), new ServerProbe(1000, answering: TRUE));
       $watchdog->run();
       $this->assertTrue($this->container->get('state')->get(Watchdog::STATE)['answering']);
-      $this->assertSame(2, $watchdog->requirements()['decionis_agentsafe']['severity']);
+      $this->assertSame(Severity::error(), $watchdog->requirements()['decionis_agentsafe']['severity']);
       $this->assertTrue($this->container->get(Rollback::class)->apply());
       $gateway = PaymentGateway::load('fincra');
       $this->assertTrue($gateway->status(), 'Rollback restores the original enabled status.');

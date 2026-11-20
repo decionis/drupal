@@ -23,12 +23,14 @@ use Drupal\decionis_commerce\Report\Xray;
 use Drupal\decionis_commerce\Report\XrayBatch;
 use Drupal\decionis_commerce\Sandbox\Isolation;
 use GuzzleHttp\ClientInterface;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
 /**
  * The own-store X-ray is offline, currency-aware and leaves history intact.
  *
  * @group decionis
  */
+#[RunTestsInSeparateProcesses]
 final class XrayTest extends DecionisCommerceTestBase {
 
   /**

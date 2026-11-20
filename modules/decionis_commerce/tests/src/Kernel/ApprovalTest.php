@@ -21,6 +21,7 @@ use Drupal\decionis\Gate\Gate;
 use Drupal\decionis_commerce\Guard\Refunds;
 use Drupal\Tests\decionis\Support\FakeGrants;
 use Drupal\Tests\decionis\Support\Scripted;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
 /**
  * Checks that approval grants execute the exact held action once.
@@ -30,6 +31,7 @@ use Drupal\Tests\decionis\Support\Scripted;
  *
  * @group decionis
  */
+#[RunTestsInSeparateProcesses]
 final class ApprovalTest extends DecionisCommerceTestBase {
 
   /**

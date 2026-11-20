@@ -11,6 +11,7 @@ use Drupal\commerce_payment\Entity\PaymentGatewayInterface;
 use Drupal\commerce_payment\Form\PaymentOperationForm;
 use Drupal\commerce_price\Price;
 use Drupal\commerce_product\Entity\ProductVariationTypeInterface;
+use Drupal\Component\Utility\DeprecationHelper;
 use Drupal\Core\Entity\EntityFormInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Form\FormStateInterface;
@@ -18,6 +19,7 @@ use Drupal\Core\Hook\Attribute\Hook;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\decionis\Gate\Gate;
 use Drupal\decionis\Gate\Background;
+use Drupal\decionis\Report\Severity;
 use Drupal\decionis_commerce\Guard\Orders;
 use Drupal\decionis_commerce\Guard\Refunds;
 use Drupal\decionis_commerce\Gateway\Custody;
@@ -26,7 +28,9 @@ use Drupal\decionis_commerce\Map\Actions;
 use Drupal\decionis_commerce\Map\Attempts;
 use Drupal\decionis_commerce\Map\CostFields;
 use Drupal\decionis_commerce\Plugin\QueueWorker\ReplayWorker;
+use Drupal\decionis_commerce\Report\Coverage;
 use Drupal\decionis_commerce\Sandbox\Quiet;
+use Drupal\decionis_commerce\Sandbox\Wiring;
 use Drupal\state_machine\Form\StateTransitionConfirmForm;
 use Drupal\state_machine\Form\StateTransitionFormInterface;
 
@@ -317,7 +321,8 @@ final class CommerceHooks {
    */
   #[Hook('commerce_payment_update')]
   public function paymentUpdate(PaymentInterface $payment): void {
-    $original = method_exists($payment, 'getOriginal') ? $payment->getOriginal() : ($payment->original ?? NULL);
+    // Drupal 11.2 added getOriginal(); Drupal 12 removes the magic property.
+    $original = DeprecationHelper::backwardsCompatibleCall(\Drupal::VERSION, '11.2.0', static fn () => $payment->getOriginal(), static fn () => $payment->original ?? NULL);
     if (!$original instanceof PaymentInterface || isset(self::$gated[(string) $payment->id()])) {
       return;
     }
@@ -346,6 +351,51 @@ final class CommerceHooks {
   #[Hook('decionis_connected')]
   public function connected(string $orgId): void {
     ReplayWorker::enqueue((int) (\Drupal::config('decionis_commerce.settings')->get('replay_days') ?: 90));
+  }
+
+  /**
+   * Status report entries.
+   *
+   * An action whose hook point is not wired runs unchecked, and nothing else
+   * on the site would say so. Drupal 11.2+ calls this hook;
+   * decionis_commerce_requirements() calls it before.
+   *
+   * @return array<string, array<string, mixed>>
+   *   Requirements keyed by name.
+   */
+  #[Hook('runtime_requirements')]
+  public function runtimeRequirements(): array {
+    $wiring = \Drupal::service(Wiring::class)->check();
+    $inactive = array_keys(array_filter($wiring['points'], static fn (bool $active): bool => !$active));
+    $requirements['decionis_commerce_wiring'] = [
+      'title' => 'Decionis Commerce hook points',
+      'value' => $inactive === [] ? 'All active' : 'Not checking: ' . implode(', ', $inactive),
+      'severity' => $inactive === [] ? Severity::ok() : Severity::error(),
+      'description' => $inactive === [] ? '' : 'These actions run unchecked. Rebuild the caches (drush cr), then run drush decionis:sandbox --authority=local.',
+    ];
+    if ($wiring['overrides'] !== []) {
+      $requirements['decionis_commerce_overrides'] = [
+        'title' => 'Decionis Commerce coverage',
+        'value' => implode('; ', $wiring['overrides']),
+        'severity' => Severity::warning(),
+        'description' => 'Custom code here could bypass the checks. Run drush decionis:sandbox --authority=local to see what it reports.',
+      ];
+    }
+    $coverage = \Drupal::service(Coverage::class)->totals();
+    $requirements['decionis_commerce_cost'] = [
+      'title' => 'Decionis Commerce cost coverage',
+      'value' => $this->t('@variations% of variations (@costed/@total); @lines% of order lines in the last 90 days (@costed_lines/@total_lines).', [
+        '@variations' => $coverage['variations']['percent'],
+        '@costed' => $coverage['variations']['costed'],
+        '@total' => $coverage['variations']['total'],
+        '@lines' => $coverage['order_lines']['percent'],
+        '@costed_lines' => $coverage['order_lines']['costed'],
+        '@total_lines' => $coverage['order_lines']['total'],
+      ]),
+      'severity' => $coverage['variations']['total'] > 0 && $coverage['variations']['costed'] === $coverage['variations']['total'] ? Severity::ok() : Severity::warning(),
+      'description' => $this->t('Costs must be recorded in the sale currency. Unknown or mismatched costs remain not covered.'),
+    ];
+    return $requirements + \Drupal::service(Watchdog::class)->requirements();
   }
 
 }

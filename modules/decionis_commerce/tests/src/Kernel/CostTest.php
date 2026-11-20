@@ -11,6 +11,7 @@ use Drupal\decionis\Form\SettingsForm;
 use Drupal\decionis_commerce\Map\Cost;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
 /**
  * Checks that margin rules read the cost field mapped by the admin.
@@ -20,6 +21,7 @@ use Drupal\field\Entity\FieldStorageConfig;
  *
  * @group decionis
  */
+#[RunTestsInSeparateProcesses]
 final class CostTest extends DecionisCommerceTestBase {
 
   /**

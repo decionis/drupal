@@ -11,12 +11,14 @@ use Drupal\commerce_price\Price;
 use Drupal\commerce_product\Entity\ProductVariation;
 use Drupal\decionis_commerce\Map\Actions;
 use Drupal\decionis_commerce\Map\Cost;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
 /**
  * What the margin check sends for an order with discounts, tax and shipping.
  *
  * @group decionis
  */
+#[RunTestsInSeparateProcesses]
 final class MarginTest extends DecionisCommerceTestBase {
 
   /**

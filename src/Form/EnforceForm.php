@@ -120,7 +120,7 @@ final class EnforceForm extends ConfirmFormBase {
       }
     }
     catch (\Throwable) {
-      $this->messenger()->addError($this->t('Commerce Gate could not activate enforcement. This action remains in Shadow. Check your connection and plan, then try again.'));
+      $this->messenger()->addError($this->t('Decionis Commerce could not activate enforcement. This action remains in Shadow. Check your connection and plan, then try again.'));
       return;
     }
     // A response can arrive after a reconnect, expiry, or coverage change.

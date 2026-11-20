@@ -38,7 +38,7 @@ final class Nudges {
     if ($action === 'price_change' && ($payload['estimated_cost'] ?? 0) > 0 && $payload['to_price'] < $payload['estimated_cost']) {
       $percent = round(100 * (1 - $payload['to_price'] / $payload['estimated_cost']), 1);
       $sku = mb_substr((string) $payload['sku'], 0, 120);
-      return sprintf('Commerce Gate would have %s this price: %s now sells %s%% below cost.', $verb, $sku, $percent);
+      return sprintf('Decionis Commerce would have %s this price: %s now sells %s%% below cost.', $verb, $sku, $percent);
     }
     $label = match ($action) {
       'price_change' => 'price change',
@@ -49,7 +49,7 @@ final class Nudges {
       default => 'action',
     };
     $reason = Reasons::join($outcome->reasons);
-    return mb_substr(sprintf('Commerce Gate would have %s this %s. %s', $verb, $label, $reason), 0, 1000);
+    return mb_substr(sprintf('Decionis Commerce would have %s this %s. %s', $verb, $label, $reason), 0, 1000);
   }
 
   /**

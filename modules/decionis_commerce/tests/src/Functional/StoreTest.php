@@ -19,6 +19,7 @@ use Drupal\decionis\Entity\Decision;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\Tests\commerce\Functional\CommerceBrowserTestBase;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
 /**
  * The store's real forms over HTTP, with the hook points as a store has them.
@@ -29,6 +30,7 @@ use Drupal\Tests\commerce\Functional\CommerceBrowserTestBase;
  *
  * @group decionis
  */
+#[RunTestsInSeparateProcesses]
 final class StoreTest extends CommerceBrowserTestBase {
 
   /**
@@ -179,10 +181,10 @@ final class StoreTest extends CommerceBrowserTestBase {
     $this->assertSame('ESCALATE', $decision->value('verdict'));
     $this->assertSame('1', $decision->value('save_confirmed'));
     $this->assertSame((string) $this->adminUser->id(), $decision->value('recipient'));
-    $this->assertStringContainsString('Commerce Gate would have required approval for this refund', $decision->value('nudge_text'));
+    $this->assertStringContainsString('Decionis Commerce would have required approval for this refund', $decision->value('nudge_text'));
     $this->drupalGet('/admin/commerce/config/decionis');
     $this->assertSession()->statusCodeEquals(200);
-    $this->assertSession()->pageTextContains('Commerce Gate would have required approval for this refund');
+    $this->assertSession()->pageTextContains('Decionis Commerce would have required approval for this refund');
     $this->assertSame(['refund_form proceeded'], $this->decisions());
   }
 

@@ -20,12 +20,14 @@ use Drupal\decionis_commerce\Report\Limits;
 use Drupal\Tests\decionis\Support\ConnectApi;
 use Drupal\Tests\decionis_commerce\Support\PolicyApi;
 use GuzzleHttp\Psr7\Response;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
 /**
  * Publication is bound to the exact local limits, connection and server receipt.
  *
  * @group decionis
  */
+#[RunTestsInSeparateProcesses]
 final class PolicyPublicationTest extends DecionisCommerceTestBase {
 
   /**

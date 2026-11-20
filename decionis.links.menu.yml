@@ -1,21 +1,21 @@
 decionis.settings:
-  title: 'Commerce Gate'
-  description: 'Connect to Commerce Gate and choose Shadow or Enforce.'
+  title: 'Decionis Commerce'
+  description: 'Connect to Decionis Commerce and choose Shadow or Enforce.'
   route_name: decionis.settings
   parent: system.admin_config_services
 decionis.decisions:
   title: 'Decisions'
-  description: 'What Commerce Gate reviewed, and what it would have held or blocked.'
+  description: 'What Decionis Commerce reviewed, and what it would have held or blocked.'
   route_name: decionis.decisions
   parent: system.admin_reports
 decionis.approvals:
   title: 'Pending approvals'
-  description: 'Actions Commerce Gate held for approval.'
+  description: 'Actions Decionis Commerce held for approval.'
   route_name: decionis.approvals
   parent: system.admin_reports
 decionis.checklist:
   title: 'Protection checklist'
-  description: 'Seven checks for this store’s Commerce Gate setup.'
+  description: 'Seven checks for this store’s Decionis Commerce setup.'
   route_name: decionis.checklist
   parent: decionis.settings
 decionis.report:

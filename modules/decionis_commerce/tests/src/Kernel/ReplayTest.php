@@ -15,6 +15,7 @@ use Drupal\decionis_commerce\Map\CostFields;
 use Drupal\decionis\Report\Summary;
 use Drupal\decionis_commerce\Replay\Replay;
 use Drupal\decionis_commerce\Sandbox\Local;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
 /**
  * Checks the 90-day Shadow replay against synthetic store history.
@@ -24,6 +25,7 @@ use Drupal\decionis_commerce\Sandbox\Local;
  *
  * @group decionis
  */
+#[RunTestsInSeparateProcesses]
 final class ReplayTest extends DecionisCommerceTestBase {
 
   /**

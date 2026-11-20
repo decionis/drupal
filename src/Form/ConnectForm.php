@@ -15,7 +15,7 @@ use Drupal\decionis\Connect\Connector;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
- * Connect to Commerce Gate: one form, one submit, without pasting a key.
+ * Connect to Decionis Commerce: one form, one submit, without pasting a key.
  */
 final class ConnectForm extends FormBase {
 
@@ -44,7 +44,7 @@ final class ConnectForm extends FormBase {
       $form['code'] = [
         '#type' => 'textfield',
         '#title' => $this->t('6-digit code'),
-        '#description' => $this->t('Commerce Gate could not reach this site, so it sent a code to the billing email. It expires in 5 minutes.'),
+        '#description' => $this->t('Decionis Commerce could not reach this site, so it sent a code to the billing email. It expires in 5 minutes.'),
         '#maxlength' => 6,
         '#size' => 8,
         '#required' => TRUE,
@@ -59,7 +59,7 @@ final class ConnectForm extends FormBase {
       ];
       return $form;
     }
-    $form['intro'] = ['#markup' => '<p>' . $this->t('Connecting creates your Commerce Gate workspace in Shadow Mode: decisions are logged and every action still runs. Choose when to enforce your policy.') . '</p>'];
+    $form['intro'] = ['#markup' => '<p>' . $this->t('Connecting creates your Decionis Commerce workspace in Shadow Mode: decisions are logged and every action still runs. Choose when to enforce your policy.') . '</p>'];
     $form['business_name'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Business name'),
@@ -81,10 +81,10 @@ final class ConnectForm extends FormBase {
     ];
     $form['terms'] = [
       '#type' => 'checkbox',
-      '#title' => $this->t('I accept the <a href=":terms">Commerce Gate terms of service</a>.', [':terms' => 'https://decionis.com/terms']),
+      '#title' => $this->t('I accept the <a href=":terms">Decionis Commerce terms of service</a>.', [':terms' => 'https://decionis.com/terms']),
       '#required' => TRUE,
     ];
-    $form['actions']['connect'] = ['#type' => 'submit', '#value' => $this->t('Connect to Commerce Gate')];
+    $form['actions']['connect'] = ['#type' => 'submit', '#value' => $this->t('Connect to Decionis Commerce')];
     return $form;
   }
 
@@ -111,7 +111,7 @@ final class ConnectForm extends FormBase {
       return;
     }
     if ($status === 'code_sent') {
-      $this->messenger()->addStatus($this->t('Commerce Gate could not reach this site. Enter the code sent to the billing email.'));
+      $this->messenger()->addStatus($this->t('Decionis Commerce could not reach this site. Enter the code sent to the billing email.'));
       return;
     }
     $this->messenger()->addStatus($this->t('Connected in Shadow Mode.'));
@@ -137,9 +137,9 @@ final class ConnectForm extends FormBase {
   private function failure(string $code): TranslatableMarkup {
     $site = $this->getRequest()->getSchemeAndHttpHost() . $this->getRequest()->getBasePath();
     return match ($code) {
-      'AUTHORIZATION_FAILED' => $this->t('Commerce Gate reached this site but could not read its one-time challenge at @site/.well-known/decionis-challenge or @site/decionis/challenge. Check that HTTP authentication, a firewall or a web server rule is not blocking those addresses, then try again.', ['@site' => $site]),
-      'REQUEST_REJECTED' => $this->t("Commerce Gate could not use @site as this site's address. A public site must be on HTTPS, on the default port. Behind a proxy or load balancer, set reverse_proxy in settings.php so Drupal reports its public address, then try again.", ['@site' => $site]),
-      'UPSTREAM_UNAVAILABLE' => $this->t('Commerce Gate is unavailable, or could not reach this site and could not email a code. Try again shortly. If this site is not public, contact Commerce Gate support.'),
+      'AUTHORIZATION_FAILED' => $this->t('Decionis Commerce reached this site but could not read its one-time challenge at @site/.well-known/decionis-challenge or @site/decionis/challenge. Check that HTTP authentication, a firewall or a web server rule is not blocking those addresses, then try again.', ['@site' => $site]),
+      'REQUEST_REJECTED' => $this->t("Decionis Commerce could not use @site as this site's address. A public site must be on HTTPS, on the default port. Behind a proxy or load balancer, set reverse_proxy in settings.php so Drupal reports its public address, then try again.", ['@site' => $site]),
+      'UPSTREAM_UNAVAILABLE' => $this->t('Decionis Commerce is unavailable, or could not reach this site and could not email a code. Try again shortly. If this site is not public, contact Decionis Commerce support.'),
       default => $this->t('Could not connect (@code). Try again.', ['@code' => $code]),
     };
   }

@@ -20,12 +20,14 @@ use Drupal\decionis_commerce\Report\Limits;
 use Drupal\decionis_commerce\Report\Xray;
 use Drupal\decionis_commerce\Sandbox\Local;
 use Drupal\decionis_commerce\Sandbox\Sandbox;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
 /**
  * Local historical drafts, saved edits and sandbox use the same currency limits.
  *
  * @group decionis
  */
+#[RunTestsInSeparateProcesses]
 final class LimitsWorkflowTest extends DecionisCommerceTestBase {
 
   /**

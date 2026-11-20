@@ -13,6 +13,7 @@ use Drupal\commerce_order\Entity\OrderInterface;
 use Drupal\commerce_payment\Entity\PaymentInterface;
 use Drupal\commerce_promotion\Entity\PromotionInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\decionis\Database\Commit;
 use Drupal\decionis\Gate\Authority;
 use Drupal\decionis\Gate\Gate;
 use Drupal\decionis\Gate\Outcome;
@@ -223,8 +224,11 @@ final class Replay {
     finally {
       if ($this->isolation->intact()) {
         $transaction->rollBack();
+        unset($transaction);
       }
-      unset($transaction);
+      else {
+        Commit::transaction($transaction);
+      }
       $this->entityTypeManager->getStorage('decionis_decision')->resetCache();
     }
   }
@@ -250,8 +254,11 @@ final class Replay {
     finally {
       if ($this->isolation->intact()) {
         $transaction->rollBack();
+        unset($transaction);
       }
-      unset($transaction);
+      else {
+        Commit::transaction($transaction);
+      }
     }
   }
 

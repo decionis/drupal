@@ -13,6 +13,7 @@ use Drupal\Core\Entity\EntityStorageException;
 use Drupal\decionis\Gate\Gate;
 use Drupal\decionis_commerce\Map\Cost;
 use Drupal\decionis_commerce\Sandbox\Local;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
 /**
  * Checks refusal at the order-place transition outside a form.
@@ -21,6 +22,7 @@ use Drupal\decionis_commerce\Sandbox\Local;
  *
  * @group decionis
  */
+#[RunTestsInSeparateProcesses]
 final class PlaceTest extends DecionisCommerceTestBase {
 
   /**

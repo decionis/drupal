@@ -7,6 +7,9 @@ parameters:
     - .
   excludePaths:
     - vendor (?)
+    # Drupal 11.2+ reads this install requirements class; PHPStan 1.x on
+    # Drupal 10 cannot ignore its unknown interface, so it is not analysed.
+    - src/Install
   ignoreErrors:
     # Form validation callbacks, hook classes and procedural hook shims run
     # outside container injection.
@@ -28,7 +31,17 @@ parameters:
     - identifier: function.alreadyNarrowedType
     - identifier: notIdentical.alwaysTrue
     - identifier: instanceof.alwaysTrue
-    # Drupal 10 has neither hook attribute; they are only read on 11.1+.
+    # Drupal 12 requires this attribute on kernel and functional tests; Drupal
+    # 10's PHPUnit 9 reads annotations and has no attribute classes.
     -
-      message: '#Attribute class Drupal\\Core\\Hook\\Attribute\\(Legacy)?Hook does not exist#'
+      message: '#Attribute class PHPUnit\\Framework\\Attributes\\RunTestsInSeparateProcesses does not exist#'
+      reportUnmatched: false
+    # Drupal 10 has neither hook attribute; they are only read on 11.1+, and
+    # LegacyRequirementsHook on 11.3+.
+    -
+      message: '#Attribute class Drupal\\Core\\Hook\\Attribute\\(Legacy)?(Requirements)?Hook does not exist#'
+      reportUnmatched: false
+    # DeprecationHelper calls getOriginal() only on Drupal 11.2+.
+    -
+      message: '#Call to an undefined method Drupal\\commerce_payment\\Entity\\PaymentInterface::getOriginal\(\)#'
       reportUnmatched: false

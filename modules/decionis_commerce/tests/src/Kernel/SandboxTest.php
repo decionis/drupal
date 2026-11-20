@@ -11,6 +11,7 @@ use Drupal\decionis_commerce\Sandbox\Hosted;
 use Drupal\decionis_commerce\Sandbox\Isolation;
 use Drupal\decionis_commerce\Sandbox\Local;
 use Drupal\decionis_commerce\Sandbox\Sandbox;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
 /**
  * Tests drush decionis:sandbox with the local demo authority.
@@ -20,6 +21,7 @@ use Drupal\decionis_commerce\Sandbox\Sandbox;
  *
  * @group decionis
  */
+#[RunTestsInSeparateProcesses]
 final class SandboxTest extends DecionisCommerceTestBase {
 
   /**

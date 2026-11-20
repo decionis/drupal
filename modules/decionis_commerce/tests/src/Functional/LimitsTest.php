@@ -11,12 +11,14 @@ use Drupal\commerce_payment\Entity\PaymentGateway;
 use Drupal\commerce_price\Price;
 use Drupal\decionis_commerce\Report\Xray;
 use Drupal\Tests\commerce\Functional\CommerceBrowserTestBase;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
 /**
  * The settings form previews local findings with AJAX, then saves chosen limits.
  *
  * @group decionis
  */
+#[RunTestsInSeparateProcesses]
 final class LimitsTest extends CommerceBrowserTestBase {
 
   /**

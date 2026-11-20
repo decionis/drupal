@@ -11,6 +11,7 @@ use Drupal\decionis_commerce\Sandbox\Isolation;
 use Drupal\decionis_commerce\Sandbox\Local;
 use Drupal\decionis_commerce\Sandbox\Sandbox;
 use Drupal\decionis_commerce\Sandbox\Wiring;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
 /**
  * Checks sandbox cleanup and hook wiring across database transaction models.
@@ -21,6 +22,7 @@ use Drupal\decionis_commerce\Sandbox\Wiring;
  *
  * @group decionis
  */
+#[RunTestsInSeparateProcesses]
 final class IsolationTest extends DecionisCommerceTestBase {
 
   /**

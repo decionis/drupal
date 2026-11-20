@@ -1,6 +1,6 @@
-# Commerce Gate for Drupal: project-page source
+# Decionis Commerce for Drupal: project-page source
 
-Source copy for the [Decionis Commerce Gate full project](https://www.drupal.org/project/decionis).
+Source copy for the [Decionis Commerce full project](https://www.drupal.org/project/decionis).
 The public beta uses the `decionis` machine name and `drupal/decionis` Composer identity.
 The [downloads page](https://commerce.decionis.com/downloads) lists verified release availability,
 installation steps, checksums, provenance and the Getting Started guide.
@@ -126,8 +126,8 @@ installation, defaults, validation scope and current limitations.
 
 ## Requirements and licence
 
-Drupal 10.3+ or 11, Commerce 3.3.13+ (or 2.41+ on Drupal 10), PHP 8.1+ with `curl`/`sodium`
-(PHP 8.3 for Drupal 11), Key and separately scheduled Drush/protected-URL cron. Page-triggered automatic cron is skipped when response completion is unconfirmed. Commerce Fincra currently requires Drupal 10.
+Drupal 10.3+, 11 or 12, Commerce 3.3.13+ (or 2.41+ on Drupal 10), PHP 8.1+ with `curl`/`sodium`
+(PHP 8.3 for Drupal 11, PHP 8.5 for Drupal 12; Commerce on Drupal 12 needs a Commerce release that supports it), Key and separately scheduled Drush/protected-URL cron. Page-triggered automatic cron is skipped when response completion is unconfirmed. Commerce Fincra currently requires Drupal 10.
 Earlier Commerce releases with the 2026-10-28 advisories are excluded.
 
 GPL-2.0-or-later. The `decionis/php-client` dependency is Apache-2.0.

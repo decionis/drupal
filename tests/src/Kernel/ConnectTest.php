@@ -21,6 +21,7 @@ use Drupal\key\KeyRepositoryInterface;
 use Drupal\Tests\decionis\Support\ConnectApi;
 use Drupal\Tests\decionis\Support\BindingProbe;
 use GuzzleHttp\Psr7\Response;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
 /**
  * Tests one-step connect.
@@ -30,6 +31,7 @@ use GuzzleHttp\Psr7\Response;
  *
  * @group decionis
  */
+#[RunTestsInSeparateProcesses]
 final class ConnectTest extends KernelTestBase {
 
   /**
@@ -250,7 +252,7 @@ final class ConnectTest extends KernelTestBase {
     $state->set(Binding::STATE, $record);
 
     $key = $this->container->get('key.repository')->getKey(Credentials::API_KEY);
-    $keys = $this->createMock(KeyRepositoryInterface::class);
+    $keys = $this->createStub(KeyRepositoryInterface::class);
     $keys->method('getKey')->willReturnCallback(function () use ($record, $key): ?KeyInterface {
       $record['generation'] = 'synthetic-key-read-reconnect';
       $this->container->get('keyvalue')->get('state')->set(Binding::STATE, $record);
@@ -397,7 +399,7 @@ final class ConnectTest extends KernelTestBase {
     try {
       foreach ([$database->driver(), get_class($database)] as $driver) {
         $options['driver'] = $driver;
-        $alias = $this->createMock(Connection::class);
+        $alias = $this->createStub(Connection::class);
         $alias->method('getConnectionOptions')->willReturn($options);
         $alias->method('driver')->willReturn($database->driver());
         $this->container->set('database', $alias);
@@ -420,7 +422,7 @@ final class ConnectTest extends KernelTestBase {
     $database = $this->container->get('database');
     $options = $database->getConnectionOptions();
     $options['database'] = (string) ($options['database'] ?? '') . '.staging-copy';
-    $copy = $this->createMock(Connection::class);
+    $copy = $this->createStub(Connection::class);
     $copy->method('getConnectionOptions')->willReturn($options);
     $copy->method('driver')->willReturn($database->driver());
     $this->container->set('database', $copy);
@@ -455,7 +457,7 @@ final class ConnectTest extends KernelTestBase {
       'prefix' => 'shop_',
       'unix_socket' => '/run/commerce/primary.sock',
     ];
-    $connection = $this->createMock(Connection::class);
+    $connection = $this->createStub(Connection::class);
     $connection->method('getConnectionOptions')->willReturnCallback(static function () use (&$options): array {
       return $options;
     });

@@ -64,6 +64,11 @@ final class Outcome {
     if ($this->effect === 'held') {
       return 'This action needs approval before it can run. It has been sent to an approver.';
     }
+    if ($this->effect === 'blocked' && ($this->reasons[0] ?? NULL) === SafeMode::HALT_REASON) {
+      return $customer
+        ? 'Checkout is temporarily paused by the store. Please try again later.'
+        : 'Decionis Commerce safe mode is halting this action; nothing was run.';
+    }
     if ($this->effect === 'failed_closed') {
       return 'Decionis could not check this action, so it was not run. Try again shortly.';
     }

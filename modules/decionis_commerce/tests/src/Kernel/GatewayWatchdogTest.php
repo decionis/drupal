@@ -7,16 +7,19 @@ namespace Drupal\Tests\decionis_commerce\Kernel;
 use Drupal\Core\Mail\MailManagerInterface;
 use Drupal\decionis\Connect\Binding;
 use Drupal\decionis\Gate\Settings;
+use Drupal\decionis\Report\Severity;
 use Drupal\decionis_commerce\Gateway\Custody;
 use Drupal\decionis_commerce\Gateway\Setup;
 use Drupal\decionis_commerce\Gateway\Watchdog;
 use Drupal\Tests\decionis_commerce\Support\ServerProbe;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
 /**
  * Readiness outages alert administrators once, independently of policy calls.
  *
  * @group decionis
  */
+#[RunTestsInSeparateProcesses]
 final class GatewayWatchdogTest extends DecionisCommerceTestBase {
 
   /**
@@ -57,7 +60,7 @@ final class GatewayWatchdogTest extends DecionisCommerceTestBase {
     $watchdog = $this->service($probe);
     $watchdog->run();
     $state = $this->container->get('state');
-    $this->assertSame(2, $watchdog->requirements()['decionis_agentsafe']['severity']);
+    $this->assertSame(Severity::error(), $watchdog->requirements()['decionis_agentsafe']['severity']);
     $mail = $state->get('system.test_mail_collector', []);
     $admin = array_values(array_filter($mail, static fn (array $message): bool => $message['to'] === 'gateway-admin@example.com'));
     $this->assertCount(1, $admin);
@@ -69,7 +72,7 @@ final class GatewayWatchdogTest extends DecionisCommerceTestBase {
     $this->assertCount(count($mail), $state->get('system.test_mail_collector', []));
     $probe->answering = TRUE;
     $watchdog->run();
-    $this->assertSame(0, $watchdog->requirements()['decionis_agentsafe']['severity']);
+    $this->assertSame(Severity::ok(), $watchdog->requirements()['decionis_agentsafe']['severity']);
     $probe->answering = FALSE;
     $watchdog->run();
     $this->assertCount(count($mail) * 2, $state->get('system.test_mail_collector', []));

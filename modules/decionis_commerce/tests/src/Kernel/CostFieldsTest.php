@@ -14,12 +14,14 @@ use Drupal\Core\Recipe\RecipeRunner;
 use Drupal\decionis_commerce\Map\CostFields;
 use Drupal\decionis_commerce\Report\Coverage;
 use Drupal\field\Entity\FieldConfig;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
 /**
  * Installation, update and recipe use one idempotent, multi-bundle cost path.
  *
  * @group decionis
  */
+#[RunTestsInSeparateProcesses]
 final class CostFieldsTest extends DecionisCommerceTestBase {
 
   /**

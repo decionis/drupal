@@ -12,12 +12,14 @@ use Drupal\KernelTests\KernelTestBase;
 use Drupal\user\Entity\Role;
 use Drupal\user\Entity\User;
 use Drupal\user\UserInterface;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
 /**
  * Opt-in, recipient permissions and durable notification deduplication.
  *
  * @group decionis
  */
+#[RunTestsInSeparateProcesses]
 final class NotificationsTest extends KernelTestBase {
 
   /**
@@ -69,7 +71,7 @@ final class NotificationsTest extends KernelTestBase {
       'recipient' => $this->admin->id(),
       'save_confirmed' => $confirmed,
       'nudge_state' => 'pending',
-      'nudge_text' => 'Commerce Gate would have blocked this price: SKU-2 now sells 4% below cost.',
+      'nudge_text' => 'Decionis Commerce would have blocked this price: SKU-2 now sells 4% below cost.',
       'customer' => 'synthetic-hash-only',
     ]);
     $entry->save();

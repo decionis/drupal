@@ -9,12 +9,14 @@ use Drupal\decionis\Entity\Hold;
 use Drupal\decionis\Gate\Credentials;
 use Drupal\decionis\Gate\Settings;
 use Drupal\Tests\BrowserTestBase;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
 /**
  * A copied connection is visible and can be disconnected by an explicit POST.
  *
  * @group decionis
  */
+#[RunTestsInSeparateProcesses]
 final class CopyNoticeTest extends BrowserTestBase {
 
   /**

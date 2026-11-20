@@ -14,6 +14,7 @@ use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\Tests\commerce\Functional\CommerceBrowserTestBase;
 use Drupal\Tests\decionis\Support\Loopback;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
 /**
  * Connect runs the first history batches before its Decisions redirect.
@@ -22,6 +23,7 @@ use Drupal\Tests\decionis\Support\Loopback;
  *
  * @group decionis
  */
+#[RunTestsInSeparateProcesses]
 final class ConnectReplayTest extends CommerceBrowserTestBase {
 
   /**
@@ -79,7 +81,7 @@ final class ConnectReplayTest extends CommerceBrowserTestBase {
     $this->prepare('outage', 1);
     $this->connect();
     $this->assertSession()->addressEquals('/admin/commerce/decionis/decisions');
-    $this->assertSession()->pageTextContains('Commerce Gate could not decide 1 check in this run');
+    $this->assertSession()->pageTextContains('Decionis Commerce could not decide 1 check in this run');
     $this->assertSession()->pageTextContains('An unavailable check is not a policy verdict');
     $this->assertSession()->pageTextNotContains('No decisions yet');
     $entries = \Drupal::entityTypeManager()->getStorage('decionis_decision')->loadByProperties(['source' => 'replay']);
@@ -145,7 +147,7 @@ final class ConnectReplayTest extends CommerceBrowserTestBase {
    */
   private function connect(): void {
     $this->drupalGet('/admin/commerce/config/decionis/connect');
-    $this->submitForm(['business_name' => 'Synthetic replay store', 'billing_email' => 'billing@example.com', 'terms' => TRUE], 'Connect to Commerce Gate');
+    $this->submitForm(['business_name' => 'Synthetic replay store', 'billing_email' => 'billing@example.com', 'terms' => TRUE], 'Connect to Decionis Commerce');
   }
 
 }

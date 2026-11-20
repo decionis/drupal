@@ -267,7 +267,6 @@ final class Pool implements ClientInterface {
       $ok = $ok && curl_setopt($handle, CURLOPT_HTTPGET, TRUE);
     }
     if (!$ok || curl_multi_add_handle($this->multi, $handle) !== CURLM_OK) {
-      curl_close($handle);
       throw new NetworkError($request, CURLE_FAILED_INIT);
     }
     $task->handle = $handle;
@@ -281,7 +280,6 @@ final class Pool implements ClientInterface {
     if ($task->handle !== NULL) {
       unset($this->handles[spl_object_id($task->handle)]);
       curl_multi_remove_handle($this->multi, $task->handle);
-      curl_close($task->handle);
       $task->handle = NULL;
     }
   }

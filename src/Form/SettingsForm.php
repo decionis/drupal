@@ -7,6 +7,7 @@ namespace Drupal\decionis\Form;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
+use Drupal\decionis\Gate\SafeMode;
 use Drupal\decionis\Gate\Settings;
 use Drupal\decionis\Notification\Digest;
 use Drupal\decionis\Report\Plan;
@@ -58,7 +59,7 @@ final class SettingsForm extends ConfigFormBase {
       '#title' => $this->t('Connection'),
       '#markup' => $settings->connected()
         ? $this->t('Connected to workspace @org.', ['@org' => $settings->get('org_id')])
-        : $this->t('Not connected. <a href=":url">Connect to Commerce Gate</a> after exploring your local Store X-ray.', [':url' => Url::fromRoute('decionis.connect')->toString()]),
+        : $this->t('Not connected. <a href=":url">Connect to Decionis Commerce</a> after exploring your local Store X-ray.', [':url' => Url::fromRoute('decionis.connect')->toString()]),
     ];
     if ($settings->copied()) {
       $form['copy'] = DisconnectForm::copyNotice();
@@ -71,6 +72,14 @@ final class SettingsForm extends ConfigFormBase {
       '#title' => $this->t('Enforcement'),
       '#markup' => \Drupal::service(Plan::class)->notice(),
     ];
+    if ($settings->connected()) {
+      $form['safe_mode'] = [
+        '#type' => 'item',
+        '#title' => $this->t('Safe mode'),
+        '#plain_text' => \Drupal::service(SafeMode::class)->describe(),
+        '#description' => $this->t('Set by an owner or administrator in Decionis Commerce. It overrides the modes below while it is set.'),
+      ];
+    }
     $protection = \Drupal::state()->get('decionis.protection');
     if (is_array($protection)) {
       $form['protection'] = [
@@ -101,7 +110,7 @@ final class SettingsForm extends ConfigFormBase {
         ],
         'failure' => [
           '#type' => 'select',
-          '#title' => $this->t('If Commerce Gate cannot decide'),
+          '#title' => $this->t('If Decionis Commerce cannot decide'),
           '#options' => ['closed' => $this->t('Hold the action (fail closed)'), 'open' => $this->t('Run it, marked ungoverned (fail open)')],
           '#default_value' => $config->get('failure.' . $key) ?: 'closed',
           '#disabled' => $key === 'order_acceptance' || $key === 'agent_tool',

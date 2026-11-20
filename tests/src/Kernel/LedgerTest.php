@@ -16,12 +16,14 @@ use Drupal\decionis\Gate\Outcome;
 use Drupal\decionis\Report\Summary;
 use Drupal\KernelTests\KernelTestBase;
 use Drupal\Tests\decionis\Support\Scripted;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
 /**
  * Replay upsert and upgrade preserve durable, uniquely identified evidence.
  *
  * @group decionis
  */
+#[RunTestsInSeparateProcesses]
 final class LedgerTest extends KernelTestBase {
 
   /**

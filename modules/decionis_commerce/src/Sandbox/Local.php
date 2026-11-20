@@ -100,7 +100,7 @@ final class Local implements Authority {
    * The scripted starter-pack rules.
    *
    * @param string $type
-   *   The Commerce Gate decision type to evaluate.
+   *   The Decionis Commerce decision type to evaluate.
    * @param array<string, mixed> $s
    *   The bounded commerce signals for the synthetic action.
    * @param array<string, mixed>|null $limits

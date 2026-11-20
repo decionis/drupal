@@ -7,11 +7,10 @@
 
 declare(strict_types=1);
 
-use Drupal\decionis_commerce\Sandbox\Wiring;
-use Drupal\decionis_commerce\Map\CostFields;
-use Drupal\decionis_commerce\Report\Coverage;
+use Drupal\Core\Hook\Attribute\LegacyRequirementsHook;
 use Drupal\Core\Url;
-use Drupal\decionis_commerce\Gateway\Watchdog;
+use Drupal\decionis_commerce\Hook\CommerceHooks;
+use Drupal\decionis_commerce\Map\CostFields;
 
 /**
  * Implements hook_install().
@@ -24,44 +23,12 @@ function decionis_commerce_install(): void {
 /**
  * Implements hook_requirements().
  *
- * An action whose hook point is not wired runs unchecked, and nothing else on
- * the site would say so.
+ * Drupal 11.3+ skips this function and calls the runtime requirements hook on
+ * \Drupal\decionis_commerce\Hook\CommerceHooks.
  */
+#[LegacyRequirementsHook]
 function decionis_commerce_requirements(string $phase): array {
-  if ($phase !== 'runtime') {
-    return [];
-  }
-  $wiring = \Drupal::service(Wiring::class)->check();
-  $inactive = array_keys(array_filter($wiring['points'], static fn (bool $active): bool => !$active));
-  $requirements['decionis_commerce_wiring'] = [
-    'title' => 'Commerce Gate hook points',
-    'value' => $inactive === [] ? 'All active' : 'Not checking: ' . implode(', ', $inactive),
-    'severity' => $inactive === [] ? REQUIREMENT_OK : REQUIREMENT_ERROR,
-    'description' => $inactive === [] ? '' : 'These actions run unchecked. Rebuild the caches (drush cr), then run drush decionis:sandbox --authority=local.',
-  ];
-  if ($wiring['overrides'] !== []) {
-    $requirements['decionis_commerce_overrides'] = [
-      'title' => 'Commerce Gate coverage',
-      'value' => implode('; ', $wiring['overrides']),
-      'severity' => REQUIREMENT_WARNING,
-      'description' => 'Custom code here could bypass the checks. Run drush decionis:sandbox --authority=local to see what it reports.',
-    ];
-  }
-  $coverage = \Drupal::service(Coverage::class)->totals();
-  $requirements['decionis_commerce_cost'] = [
-    'title' => 'Commerce Gate cost coverage',
-    'value' => t('@variations% of variations (@costed/@total); @lines% of order lines in the last 90 days (@costed_lines/@total_lines).', [
-      '@variations' => $coverage['variations']['percent'],
-      '@costed' => $coverage['variations']['costed'],
-      '@total' => $coverage['variations']['total'],
-      '@lines' => $coverage['order_lines']['percent'],
-      '@costed_lines' => $coverage['order_lines']['costed'],
-      '@total_lines' => $coverage['order_lines']['total'],
-    ]),
-    'severity' => $coverage['variations']['total'] > 0 && $coverage['variations']['costed'] === $coverage['variations']['total'] ? REQUIREMENT_OK : REQUIREMENT_WARNING,
-    'description' => t('Costs must be recorded in the sale currency. Unknown or mismatched costs remain not covered.'),
-  ];
-  return $requirements + \Drupal::service(Watchdog::class)->requirements();
+  return $phase === 'runtime' ? \Drupal::service(CommerceHooks::class)->runtimeRequirements() : [];
 }
 
 /**

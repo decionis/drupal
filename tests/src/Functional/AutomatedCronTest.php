@@ -13,12 +13,14 @@ use Drupal\decionis\Gate\Gate;
 use Drupal\decionis\Gate\Settings;
 use Drupal\decionis\Notification\Digest;
 use Drupal\Tests\BrowserTestBase;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
 /**
  * Due automatic cron on a non-FPM page cannot start remote Shadow work.
  *
  * @group decionis
  */
+#[RunTestsInSeparateProcesses]
 final class AutomatedCronTest extends BrowserTestBase {
 
   /**
@@ -125,6 +127,8 @@ final class AutomatedCronTest extends BrowserTestBase {
     $pending = $this->container->get(Gate::class)->check($next, new Context('price_change', 'synthetic_save', atStake: 96.0, currency: 'USD'));
     $this->container->get(Deferred::class)->dispatch();
     $this->container->get('state')->set('decionis.entitlement_checked', time());
+    // Safe mode rides the same status read; fresh here, so cron's requests are the queued evaluation alone.
+    $this->container->get('state')->set('decionis.safe_mode_checked', time());
     $this->container->get('state')->set('system.cron_last', 0);
     $this->drupalGet('/admin/config/system/cron');
     $this->assertSession()->statusCodeEquals(200);

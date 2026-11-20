@@ -13,6 +13,7 @@ use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\State\StateInterface;
 use Drupal\decionis\Gate\Credentials;
+use Drupal\decionis\Gate\SafeMode;
 use Drupal\decionis\Gate\Settings;
 use GuzzleHttp\Psr7\HttpFactory;
 use Psr\Http\Client\ClientInterface;
@@ -44,6 +45,7 @@ final class Connector {
     private readonly ModuleHandlerInterface $moduleHandler,
     private readonly ?ClientInterface $http = NULL,
     private readonly ?Binding $binding = NULL,
+    private readonly ?SafeMode $safeMode = NULL,
   ) {}
 
   /**
@@ -142,10 +144,11 @@ final class Connector {
     $this->configFactory->getEditable('decionis.settings')->clear('org_id')->save();
     $this->state->delete(self::STATE);
     $this->state->delete(Settings::ENTITLEMENT);
+    ($this->safeMode ?? \Drupal::service(SafeMode::class))->forget();
   }
 
   /**
-   * Reads the workspace status and the server's entitlement for this site.
+   * Reads the workspace status: the entitlement and Decionis Commerce safe mode.
    */
   public function refresh(): void {
     $identity = $this->settings->connectionIdentity();
@@ -176,6 +179,8 @@ final class Connector {
       return;
     }
     $this->adoptEntitlement($status, $identity, $org);
+    // The same answer states safe mode; a server without it states none.
+    ($this->safeMode ?? \Drupal::service(SafeMode::class))->adopt($status['safe_mode'] ?? NULL, $identity);
   }
 
   /**

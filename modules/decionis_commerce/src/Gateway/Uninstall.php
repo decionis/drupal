@@ -38,7 +38,7 @@ final class Uninstall implements ModuleUninstallValidatorInterface {
       return [];
     }
     if (!empty($record['custody']) || !empty($record['rollback_key']) || !empty($gateway->get('configuration')['secret_key_held_by_gateway'])) {
-      return [(string) $this->t('This gateway still depends on Commerce Gate payment-key custody or its rollback provider. Have the host configure and verify an independent protected key provider, then remove the recorded gateway before uninstalling. Keep the private key file and custody recovery record.')];
+      return [(string) $this->t('This gateway still depends on Decionis Commerce payment-key custody or its rollback provider. Have the host configure and verify an independent protected key provider, then remove the recorded gateway before uninstalling. Keep the private key file and custody recovery record.')];
     }
     return [];
   }

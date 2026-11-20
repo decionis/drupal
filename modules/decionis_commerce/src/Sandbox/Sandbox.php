@@ -17,6 +17,7 @@ use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Database\Connection;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\decionis\Approval\Approvals;
+use Drupal\decionis\Database\Commit;
 use Drupal\decionis\Approval\Intents;
 use Drupal\decionis\Entity\Hold;
 use Drupal\decionis\Gate\Authority;
@@ -116,8 +117,11 @@ final class Sandbox {
           finally {
             if ($this->isolation->intact()) {
               $savepoint->rollBack();
+              unset($savepoint);
             }
-            unset($savepoint);
+            else {
+              Commit::transaction($savepoint);
+            }
             \Drupal::service('entity.memory_cache')->deleteAll();
           }
           if (!$this->isolation->intact()) {
@@ -136,8 +140,11 @@ final class Sandbox {
       $intact = $this->isolation->intact();
       if ($intact) {
         $outer->rollBack();
+        unset($outer);
       }
-      unset($outer);
+      else {
+        Commit::transaction($outer);
+      }
       Quiet::set(FALSE);
       $this->cost->clear();
       \Drupal::service('entity.memory_cache')->deleteAll();

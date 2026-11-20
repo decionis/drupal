@@ -7,12 +7,14 @@ namespace Drupal\Tests\decionis_commerce\Kernel;
 use Drupal\commerce_payment\Entity\PaymentGateway;
 use Drupal\decionis_commerce\Gateway\Setup;
 use Drupal\decionis_commerce\Gateway\Uninstall;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
 /**
  * Module removal cannot silently remove an active runtime key dependency.
  *
  * @group decionis
  */
+#[RunTestsInSeparateProcesses]
 final class GatewayUninstallTest extends DecionisCommerceTestBase {
 
   /**

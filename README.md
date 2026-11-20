@@ -7,13 +7,13 @@
   official full project and the public module-only distribution mirror.
 -->
 
-# Commerce Gate for Drupal
+# Decionis Commerce for Drupal
 
 See what your own store's recent orders, refunds and promotions reveal before connecting an
 account. The **Store X-ray** runs on the site, separates currencies and shows where cost data is
 missing. It sends nothing off the site and labels its results as estimates.
 
-After connection, Commerce Gate evaluates commerce actions against your workspace's policy.
+After connection, Decionis Commerce evaluates commerce actions against your workspace's policy.
 Shadow Mode records what would have been held or blocked without holding up a shopper or an admin
 save. You can then choose **Enforce this one** for an action when the server confirms an
 entitlement. Remote decisions can carry signed Decision Dossiers; pending checks and local
@@ -25,7 +25,7 @@ Local Store X-ray and the existing Shadow journey are available. Enforcement tri
 publication, billing-contact confirmation and workspace ownership claims are not yet available in
 this beta.
 
-This module is a public beta. The official [Decionis Commerce Gate project](https://www.drupal.org/project/decionis)
+This module is a public beta. The official [Decionis Commerce project](https://www.drupal.org/project/decionis)
 hosts the public release series, with a [module-only GitHub mirror](https://github.com/decionis/drupal).
 Use the [downloads page](https://commerce.decionis.com/downloads) for verified package availability,
 release files, checksums, provenance and the Getting Started guide.
@@ -34,11 +34,13 @@ Beta releases are not covered by Drupal's security advisory policy. The earlier 
 artifact remains a separate historical release. [Contact Decionis](https://decionis.com/contact)
 for connected-service access and support.
 
-- Drupal 10.3 or later, or Drupal 11; PHP 8.1 or later, with PHP 8.3 for Drupal 11.
+- Drupal 10.3 or later, Drupal 11 or Drupal 12; PHP 8.1 or later, with PHP 8.3 for Drupal 11 and
+  PHP 8.5 for Drupal 12. On Drupal 12, `decionis_commerce` needs a Drupal Commerce release that
+  supports Drupal 12.
 - Drupal Commerce 3.3.13 or later, or Commerce 2.41 or later on Drupal 10. Earlier Commerce
   releases carry the 2026-10-28 security advisories and are excluded by the package.
 - PHP's `curl` and `sodium` extensions, and the [Key](https://www.drupal.org/project/key) module.
-- Scheduled Drush cron or Drupal’s protected cron URL for deferred Shadow checks, the remaining replay, optional digests and gateway health. Automatic cron on a page request does no Commerce Gate network work unless FPM has confirmed that the response ended.
+- Scheduled Drush cron or Drupal’s protected cron URL for deferred Shadow checks, the remaining replay, optional digests and gateway health. Automatic cron on a page request does no Decionis Commerce network work unless FPM has confirmed that the response ended.
 
 X-ray, limit tuning, cost coverage and the local sandbox work without the API. Connect and remote
 replay need the service and its Drupal-provider deployment. Enforcement needs a server-issued
@@ -239,7 +241,7 @@ once; changed, expired, already-run or stale-connection proposals are refused. M
 notifications remain dependent on the service's delivery setup.
 
 Refunds issued outside Drupal never pass its preflight. Where a supported provider integration
-updates the matching Drupal payment with a refund, Commerce Gate can show an outside-refund
+updates the matching Drupal payment with a refund, Decionis Commerce can show an outside-refund
 observation and the decision that would have applied. An empty log does not prove that no refund
 occurred.
 
@@ -356,7 +358,7 @@ workspace in Shadow. `--policy=<version>` pins a published policy for hosted/acc
 
 Before uninstalling, export decision evidence and decide how to retain or remove decision and
 approval records; Drupal refuses removal while those entities remain. An existing gateway that
-depends on Commerce Gate's custody or rollback key injection must be removed after a separate replacement gateway has been configured and verified with independent key access. A rollback alone still uses the module's private
+depends on Decionis Commerce's custody or rollback key injection must be removed after a separate replacement gateway has been configured and verified with independent key access. A rollback alone still uses the module's private
 key binding. Preserve host recovery files until the replacement gateway has been checked.
 
 Support: [decionis.com/contact](https://decionis.com/contact). Licence: GPL-2.0-or-later; the

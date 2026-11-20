@@ -12,12 +12,14 @@ use Drupal\decionis\Gate\Settings;
 use Drupal\Tests\commerce\Functional\CommerceBrowserTestBase;
 use Drupal\Tests\decionis\Support\ConnectApi;
 use Drupal\Tests\decionis\Support\Loopback;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
 /**
  * An action-specific POST requires current entitlement and real hook coverage.
  *
  * @group decionis
  */
+#[RunTestsInSeparateProcesses]
 final class EnforcementTest extends CommerceBrowserTestBase {
 
   /**

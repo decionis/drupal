@@ -25,7 +25,7 @@ final class DisconnectForm extends ConfirmFormBase {
    * {@inheritdoc}
    */
   public function getQuestion(): mixed {
-    return $this->t('Disconnect this site from Commerce Gate?');
+    return $this->t('Disconnect this site from Decionis Commerce?');
   }
 
   /**
@@ -59,7 +59,7 @@ final class DisconnectForm extends ConfirmFormBase {
       $form_state->setRedirect('decionis.settings');
     }
     catch (\Throwable) {
-      $this->messenger()->addError($this->t('Commerce Gate is unavailable. The disconnect could not finish.'));
+      $this->messenger()->addError($this->t('Decionis Commerce is unavailable. The disconnect could not finish.'));
     }
   }
 

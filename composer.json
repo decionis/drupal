@@ -1,6 +1,6 @@
 {
   "name": "drupal/decionis",
-  "description": "Local store estimates and Commerce Gate policy checks for Drupal, starting in Shadow Mode.",
+  "description": "Local store estimates and Decionis Commerce policy checks for Drupal, starting in Shadow Mode.",
   "type": "drupal-module",
   "license": "GPL-2.0-or-later",
   "homepage": "https://decionis.com",
@@ -8,8 +8,8 @@
     "php": ">=8.1",
     "ext-curl": "*",
     "ext-sodium": "*",
-    "decionis/php-client": "^0.1.0",
-    "drupal/core": "^10.3 || ^11",
+    "decionis/php-client": "^0.1.1",
+    "drupal/core": "^10.3 || ^11 || ^12",
     "drupal/key": "^1.20"
   },
   "suggest": {

@@ -10,14 +10,17 @@ use Drupal\decionis\Connect\Binding;
 use Drupal\decionis\Entity\Decision;
 use Drupal\decionis\Gate\Authority;
 use Drupal\decionis\Report\Pending;
+use Drupal\decionis\Report\Severity;
 use Drupal\KernelTests\KernelTestBase;
 use Drupal\key\KeyRepositoryInterface;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
 /**
  * Status reads report queue age without processing work or reading credentials.
  *
  * @group decionis
  */
+#[RunTestsInSeparateProcesses]
 final class PendingTest extends KernelTestBase {
 
   private const NOW = 2000000000;
@@ -38,7 +41,7 @@ final class PendingTest extends KernelTestBase {
   protected function setUp(): void {
     parent::setUp();
     $this->installConfig(['decionis']);
-    $clock = $this->createMock(TimeInterface::class);
+    $clock = $this->createStub(TimeInterface::class);
     $clock->method('getCurrentTime')->willReturn(self::NOW);
     $this->container->set('datetime.time', $clock);
     $this->pending = new Pending($this->container->get('database'), $clock);
@@ -60,7 +63,7 @@ final class PendingTest extends KernelTestBase {
     $this->record('shadow', 'evaluating', 7200, self::NOW + 86400);
     $this->assertSame(['count' => 2, 'oldest_age' => 7200], $this->pending->read());
     $warning = decionis_requirements('runtime')['decionis_shadow_pending'];
-    $this->assertSame(REQUIREMENT_WARNING, $warning['severity']);
+    $this->assertSame(Severity::warning(), $warning['severity']);
     $this->assertStringContainsString('2 overdue Shadow checks', (string) $warning['value']);
     $this->assertStringContainsString('7200 seconds', (string) $warning['value']);
     $this->assertStringContainsString('drush cron', (string) $warning['description']);

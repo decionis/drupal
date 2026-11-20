@@ -1,8 +1,8 @@
-name: 'Commerce Gate'
+name: 'Decionis Commerce'
 type: module
-description: 'Local store estimates and Commerce Gate policy checks, starting in Shadow Mode.'
-package: 'Commerce Gate'
-core_version_requirement: ^10.3 || ^11
+description: 'Local store estimates and Decionis Commerce policy checks, starting in Shadow Mode.'
+package: 'Decionis Commerce'
+core_version_requirement: ^10.3 || ^11 || ^12
 php: 8.1
 configure: decionis.settings
 dependencies:

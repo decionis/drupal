@@ -16,12 +16,14 @@ use Drupal\decionis\Notification\Nudges;
 use Drupal\decionis\Report\Summary;
 use Drupal\decionis_commerce\Guard\Orders;
 use Drupal\decionis_commerce\Map\Cost;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
 /**
  * Real delayed HTTP is entirely outside checkout and price-save requests.
  *
  * @group decionis
  */
+#[RunTestsInSeparateProcesses]
 final class ShadowTest extends DecionisCommerceTestBase {
 
   /**

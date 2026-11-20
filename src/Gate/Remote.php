@@ -19,7 +19,7 @@ use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 
 /**
- * The store's Commerce Gate workspace, reached with its site-scoped key.
+ * The store's Decionis Commerce workspace, reached with its site-scoped key.
  *
  * Checkout gets one attempt inside the latency budget; admin actions get
  * bounded retries inside five seconds.

@@ -17,7 +17,7 @@ use Drupal\decionis\Gate\Signals;
 use Drupal\decionis_commerce\Compatibility;
 
 /**
- * Maps Drupal Commerce writes onto Commerce Gate actions, unchanged in type.
+ * Maps Drupal Commerce writes onto Decionis Commerce actions, unchanged in type.
  *
  * Only bounded commerce facts leave the site: amounts, SKUs, cost base,
  * counts, and keyed hashes of the customer and the acting user.

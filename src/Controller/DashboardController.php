@@ -10,6 +10,7 @@ use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Url;
 use Drupal\decionis\Entity\Decision;
 use Drupal\decionis\Form\DisconnectForm;
+use Drupal\decionis\Gate\SafeMode;
 use Drupal\decionis\Gate\Settings;
 use Drupal\decionis\Report\Activity;
 use Drupal\decionis\Report\Evidence;
@@ -76,6 +77,10 @@ final class DashboardController extends ControllerBase {
     $build['status'] = [
       '#markup' => '<p>' . ($this->settings->connected() ? $this->t('Connected.') : $this->t('Not connected: actions are logged as ungoverned.')) . '</p>',
     ];
+    if ($this->settings->connected()) {
+      // Decionis Commerce safe mode overrides every mode below while it is set.
+      $build['safe_mode'] = ['#type' => 'item', '#title' => $this->t('Safe mode'), '#plain_text' => \Drupal::service(SafeMode::class)->describe()];
+    }
     $modes = [];
     foreach (Activity::LABELS as $action => $label) {
       $modes[] = $label . ': ' . strtoupper($this->settings->mode($action));
@@ -125,7 +130,7 @@ final class DashboardController extends ControllerBase {
       $text = sprintf('Signature %s. Evidence coverage %s. Key id: %s. Signed policy version: %s.', $result['signature_valid'] ? 'valid' : 'NOT VERIFIED', $result['complete'] ? 'complete' : 'incomplete', $result['key_id'], $result['policy_version']);
     }
     catch (\Throwable) {
-      $text = 'Could not verify this Dossier. Commerce Gate is unavailable, or the returned evidence does not match this action.';
+      $text = 'Could not verify this Dossier. Decionis Commerce is unavailable, or the returned evidence does not match this action.';
     }
     $build = [
       'summary' => ['#type' => 'html_tag', '#tag' => 'p', '#value' => htmlspecialchars($text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')],

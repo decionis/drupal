@@ -11,7 +11,7 @@ use Drupal\decionis\Gate\Context;
 use Drupal\Tests\UnitTestCase;
 
 /**
- * Deferred captures preserve every canonical Commerce Gate action contract.
+ * Deferred captures preserve every canonical Decionis Commerce action contract.
  *
  * @group decionis
  */

@@ -48,7 +48,7 @@ final class Batch {
       \Drupal::messenger()->addWarning(t('Replay stopped because this site’s connection changed. Reconnect to start a replay for this workspace.'));
     }
     elseif ($run['unavailable'] > 0) {
-      $notice = \Drupal::translation()->formatPlural($run['unavailable'], 'Commerce Gate could not decide 1 check in this run.', 'Commerce Gate could not decide @count checks in this run.');
+      $notice = \Drupal::translation()->formatPlural($run['unavailable'], 'Decionis Commerce could not decide 1 check in this run.', 'Decionis Commerce could not decide @count checks in this run.');
       \Drupal::messenger()->addWarning($notice . ' ' . t('Previous decisions were kept; checks without one are marked ungoverned. An unavailable check is not a policy verdict.'));
     }
     if ($run['status'] === 'running') {

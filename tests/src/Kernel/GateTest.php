@@ -17,6 +17,7 @@ use Decionis\Client\Decision\Decision as Answer;
 use Decionis\Client\Error\TransportException;
 use Drupal\KernelTests\KernelTestBase;
 use Drupal\Tests\decionis\Support\Scripted;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
 /**
  * Checks modes, verdict handling, and per-action failure policy.
@@ -26,6 +27,7 @@ use Drupal\Tests\decionis\Support\Scripted;
  *
  * @group decionis
  */
+#[RunTestsInSeparateProcesses]
 final class GateTest extends KernelTestBase {
 
   /**

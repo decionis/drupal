@@ -13,6 +13,7 @@ use Drupal\decionis\Gate\Settings;
 use Drupal\KernelTests\KernelTestBase;
 use Drupal\Tests\decionis\Support\FakeGrants;
 use GuzzleHttp\Psr7\Response;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 use Psr\Http\Client\ClientInterface;
 
 /**
@@ -20,6 +21,7 @@ use Psr\Http\Client\ClientInterface;
  *
  * @group decionis
  */
+#[RunTestsInSeparateProcesses]
 final class GrantBindingTest extends KernelTestBase {
 
   /**

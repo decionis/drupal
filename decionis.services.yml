@@ -12,6 +12,9 @@ services:
     arguments:
       $keys: '@key.repository'
       $keyValueFactory: '@keyvalue'
+  Drupal\decionis\Gate\SafeMode:
+    arguments:
+      $keyValueFactory: '@keyvalue'
   Drupal\decionis\Gate\Remote: ~
   Drupal\decionis\Gate\Authority: '@Drupal\decionis\Gate\Remote'
   Drupal\decionis\Gate\Ledger:
@@ -27,6 +30,7 @@ services:
     arguments:
       $holds: '@?Drupal\decionis\Gate\Holds'
       $deferred: '@Drupal\decionis\Gate\Deferred'
+      $safeMode: '@Drupal\decionis\Gate\SafeMode'
   Drupal\decionis\Notification\Nudges:
     arguments:
       $user: '@current_user'

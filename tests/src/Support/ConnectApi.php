@@ -92,6 +92,16 @@ final class ConnectApi implements ClientInterface {
   public int $statusCode = 200;
 
   /**
+   * When TRUE, the status route states safe mode as $safeMode.
+   */
+  public bool $reportsSafeMode = FALSE;
+
+  /**
+   * The safe mode the status route states: NULL, a rule, or a malformed value.
+   */
+  public mixed $safeMode = NULL;
+
+  /**
    * Simulates reconnect while an old status response is already in flight.
    */
   public ?\Closure $duringStatus = NULL;
@@ -175,7 +185,11 @@ final class ConnectApi implements ClientInterface {
    * Captures the old response before a second request changes the connection.
    */
   private function status(): ResponseInterface {
-    $response = self::json($this->statusCode, ['org_id' => $this->org, 'entitlement' => $this->entitlement]);
+    $body = ['org_id' => $this->org, 'entitlement' => $this->entitlement];
+    if ($this->reportsSafeMode) {
+      $body['safe_mode'] = $this->safeMode;
+    }
+    $response = self::json($this->statusCode, $body);
     ($this->duringStatus)?->__invoke();
     return $response;
   }

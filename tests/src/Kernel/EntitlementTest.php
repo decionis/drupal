@@ -18,6 +18,7 @@ use Drupal\decionis\Gate\Settings;
 use Drupal\KernelTests\KernelTestBase;
 use Drupal\Tests\decionis\Support\ConnectApi;
 use GuzzleHttp\Psr7\Response;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
 /**
  * Checks that effective mode follows the server's entitlement.
@@ -27,6 +28,7 @@ use GuzzleHttp\Psr7\Response;
  *
  * @group decionis
  */
+#[RunTestsInSeparateProcesses]
 final class EntitlementTest extends KernelTestBase {
 
   /**
@@ -57,7 +59,7 @@ final class EntitlementTest extends KernelTestBase {
     $this->container->set(Connector::class, $this->connector);
     $this->connector->connect('https://shop.example', 'site-uuid-1', 'Example Shop', 'billing@example.com');
     $this->config('decionis.settings')->set('mode', 'enforce')->save();
-    $account = $this->createMock(AccountInterface::class);
+    $account = $this->createStub(AccountInterface::class);
     $account->method('hasPermission')->willReturn(TRUE);
     $this->container->get('current_user')->setAccount($account);
   }
@@ -293,7 +295,7 @@ final class EntitlementTest extends KernelTestBase {
     $form->submitForm($build, $state);
     $this->assertSame([], $this->api->trialHeaders);
     [$form, $state, $build] = $this->confirmation('price_change');
-    $account = $this->createMock(AccountInterface::class);
+    $account = $this->createStub(AccountInterface::class);
     $account->method('hasPermission')->willReturn(FALSE);
     $this->container->get('current_user')->setAccount($account);
     $form->submitForm($build, $state);

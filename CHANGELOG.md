@@ -1,5 +1,30 @@
 # Commerce Gate for Drupal changelog
 
+## Unreleased
+
+Drupal 12 readiness, from the Project Update Bot report in
+[#3637364](https://www.drupal.org/project/decionis/issues/3637364).
+
+- Status report entries use the `RequirementSeverity` enum on Drupal 11.2 and later, and the
+  integer severities on earlier cores. Drupal 12 removes the `REQUIREMENT_*` constants and no
+  longer converts integers, which also affected the AgentSafe gateway health entry.
+- Refunds made outside Decionis Commerce read the previous payment through `getOriginal()` on
+  Drupal 11.2 and later, instead of the `original` property that Drupal 12 removes.
+- Removed `curl_close()` calls, which have had no effect since PHP 8.0 and are deprecated in
+  PHP 8.5, the minimum PHP version for Drupal 12. The module now requires
+  `decionis/php-client` 0.1.1, which drops them as well.
+- Kernel and functional tests declare `#[RunTestsInSeparateProcesses]`, which Drupal 12
+  requires.
+- Declared Drupal 12 compatibility (`^10.3 || ^11 || ^12`). The base module is tested on Drupal
+  12; `decionis_commerce` also needs a Drupal Commerce release that supports Drupal 12.
+- Requirements use the Drupal 11.2 API: an install requirements class and the runtime and update
+  requirements hooks. The procedural `hook_requirements()` remains for earlier cores and carries
+  `#[LegacyRequirementsHook]`, so Drupal 11.3 and later skip it. Drupal 13 removes the
+  unmarked form.
+- Transactions that are not rolled back are committed with `Transaction::commitOrRelease()`
+  where core has it. Drupal 11.5 deprecated committing by letting the object go out of scope,
+  and Drupal 13 removes it.
+
 ## 0.1.2-beta1 — first Drupal.org public beta
 
 Prepared on 2026-11-04 with Revision 2. The official full project and public Git mirror contain

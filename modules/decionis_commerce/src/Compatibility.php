@@ -46,7 +46,7 @@ final class Compatibility {
   }
 
   /**
-   * Which discounts a promotion may combine with, in Commerce Gate terms.
+   * Which discounts a promotion may combine with, in Decionis Commerce terms.
    *
    * @return array
    *   Whether order, product and shipping discounts may combine.

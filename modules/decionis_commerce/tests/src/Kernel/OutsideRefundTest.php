@@ -14,6 +14,7 @@ use Drupal\decionis\Gate\Deferred;
 use Drupal\decionis_commerce\Report\History;
 use Drupal\decionis_commerce\Report\Xray;
 use Drupal\Tests\decionis\Support\Scripted;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
 /**
  * Refunds that reach a payment without the refund gate are logged.
@@ -24,6 +25,7 @@ use Drupal\Tests\decionis\Support\Scripted;
  *
  * @group decionis
  */
+#[RunTestsInSeparateProcesses]
 final class OutsideRefundTest extends DecionisCommerceTestBase {
 
   /**

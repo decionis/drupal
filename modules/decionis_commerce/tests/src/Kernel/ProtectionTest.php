@@ -13,12 +13,14 @@ use Drupal\decionis\Gate\Settings;
 use Drupal\decionis\Report\Protection;
 use Drupal\decionis_commerce\Map\CostFields;
 use Drupal\decionis_commerce\Report\Limits;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
 /**
  * The named checks give repeatable scores for fresh, connected and complete sites.
  *
  * @group decionis
  */
+#[RunTestsInSeparateProcesses]
 final class ProtectionTest extends DecionisCommerceTestBase {
 
   /**

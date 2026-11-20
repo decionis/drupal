@@ -12,12 +12,14 @@ use Drupal\decionis\Gate\Credentials;
 use Drupal\decionis_commerce\Form\SandboxForm;
 use Drupal\decionis_commerce\Map\CostFields;
 use Drupal\Tests\commerce\Functional\CommerceBrowserTestBase;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
 /**
  * First-run tools in the admin UI: local Batch, bounded CSV, redacted preview.
  *
  * @group decionis
  */
+#[RunTestsInSeparateProcesses]
 final class ToolsTest extends CommerceBrowserTestBase {
 
   /**

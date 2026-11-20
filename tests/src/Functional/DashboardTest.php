@@ -11,12 +11,14 @@ use Drupal\decionis\Entity\Decision;
 use Drupal\decionis\Gate\Credentials;
 use Drupal\Tests\BrowserTestBase;
 use Drupal\Tests\decionis\Support\EvidenceApi;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
 /**
  * Currency-safe first catches, plain reasons, inline verification and downloads.
  *
  * @group decionis
  */
+#[RunTestsInSeparateProcesses]
 final class DashboardTest extends BrowserTestBase {
 
   /**

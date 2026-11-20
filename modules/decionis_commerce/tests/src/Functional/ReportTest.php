@@ -12,12 +12,14 @@ use Drupal\decionis\Entity\Decision;
 use Drupal\decionis_commerce\Map\CostFields;
 use Drupal\decionis_commerce\Report\Limits;
 use Drupal\Tests\commerce\Functional\CommerceBrowserTestBase;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
 /**
  * Owner reports keep local estimates and individual signed evidence distinct.
  *
  * @group decionis
  */
+#[RunTestsInSeparateProcesses]
 final class ReportTest extends CommerceBrowserTestBase {
 
   /**

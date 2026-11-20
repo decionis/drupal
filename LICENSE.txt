@@ -1,4 +1,4 @@
-Commerce Gate for Drupal is licensed under the GNU General Public License,
+Decionis Commerce for Drupal is licensed under the GNU General Public License,
 version 2 or (at your option) any later version (GPL-2.0-or-later).
 
 The unmodified GNU GPL version 2 text below was retrieved on 2026-11-04 from

@@ -59,7 +59,7 @@ final class Digest {
       '#tags' => TRUE,
       '#default_value' => array_values($users),
       '#selection_settings' => ['include_anonymous' => FALSE],
-      '#description' => t('Select up to 100 active users who can administer Commerce Gate. Permission is checked again before each email.'),
+      '#description' => t('Select up to 100 active users who can administer Decionis Commerce. Permission is checked again before each email.'),
     ];
     $form['digest']['day'] = [
       '#type' => 'select',
@@ -87,7 +87,7 @@ final class Digest {
     foreach ($recipients as $item) {
       $user = $storage->load($item['target_id'] ?? 0);
       if (!$user instanceof UserInterface || !$user->isActive() || !$user->hasPermission('administer decionis')) {
-        $state->setErrorByName('digest][recipients', t('Every recipient must be an active user with permission to administer Commerce Gate.'));
+        $state->setErrorByName('digest][recipients', t('Every recipient must be an active user with permission to administer Decionis Commerce.'));
         break;
       }
     }
@@ -181,7 +181,7 @@ final class Digest {
     $query->addExpression('COUNT(*)', 'count');
     $query->addExpression('SUM(COALESCE(d.at_stake, 0))', 'amount');
     $query->groupBy('d.action')->groupBy('d.currency');
-    $body = ['Your weekly Commerce Gate Shadow review', 'These saved actions would have been stopped or required approval under your policy. Shadow allowed them to continue.'];
+    $body = ['Your weekly Decionis Commerce Shadow review', 'These saved actions would have been stopped or required approval under your policy. Shadow allowed them to continue.'];
     $found = FALSE;
     foreach ($query->execute() as $row) {
       if (!isset(Activity::LABELS[$row->action])) {
@@ -203,7 +203,7 @@ final class Digest {
    */
   public static function mail(string $key, array &$message, array $params): void {
     if ($key === 'digest') {
-      $message['subject'] = 'Your weekly Commerce Gate Shadow review';
+      $message['subject'] = 'Your weekly Decionis Commerce Shadow review';
       $message['body'] = array_values(array_filter((array) ($params['body'] ?? []), 'is_string'));
     }
   }

@@ -18,12 +18,14 @@ use Drupal\decionis_commerce\Replay\Replay;
 use Drupal\decionis_commerce\Replay\Runs;
 use Drupal\Tests\decionis\Support\ConnectApi;
 use Drupal\Tests\decionis\Support\Loopback;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
 /**
  * Remote replay uses only the declared client contract against a local fixture.
  *
  * @group decionis
  */
+#[RunTestsInSeparateProcesses]
 final class LiveReplayTest extends DecionisCommerceTestBase {
 
   /**

@@ -10,6 +10,7 @@ use Drupal\Core\Mail\MailManagerInterface;
 use Drupal\Core\State\StateInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\decionis\Gate\Background;
+use Drupal\decionis\Report\Severity;
 use Drupal\user\UserInterface;
 
 /**
@@ -99,7 +100,7 @@ final class Watchdog {
       'decionis_agentsafe' => [
         'title' => $this->t('AgentSafe payment gateway'),
         'value' => $changed ? $this->t('Critical: AgentSafe uses an earlier site connection') : ($ready === TRUE ? $this->t('Ready at the last cron check') : ($ready === FALSE ? $this->t('Critical: AgentSafe is unavailable') : $this->t('Awaiting the first cron health check'))),
-        'severity' => $ready === TRUE ? 0 : ($ready === FALSE ? 2 : 1),
+        'severity' => $ready === TRUE ? Severity::ok() : ($ready === FALSE ? Severity::error() : Severity::warning()),
         'description' => $ready === FALSE ? $this->t('AgentSafe holds the payment key and checkout may fail. Restart its service or run drush decionis:gateway-rollback to return the key through a private Key file provider.') : $this->t('Drupal cron checks the local AgentSafe readiness endpoint. No payment or policy request is sent.'),
       ],
     ];

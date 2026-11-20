@@ -2,14 +2,14 @@ decionis.settings:
   path: '/admin/commerce/config/decionis'
   defaults:
     _form: '\Drupal\decionis\Form\SettingsForm'
-    _title: 'Commerce Gate'
+    _title: 'Decionis Commerce'
   requirements:
     _permission: 'administer decionis'
 decionis.connect:
   path: '/admin/commerce/config/decionis/connect'
   defaults:
     _form: '\Drupal\decionis\Form\ConnectForm'
-    _title: 'Connect to Commerce Gate'
+    _title: 'Connect to Decionis Commerce'
   requirements:
     _permission: 'administer decionis'
 decionis.challenge:

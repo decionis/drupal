@@ -10,6 +10,7 @@ use Drupal\decionis_commerce\Gateway\Probe;
 use Drupal\decionis_commerce\Gateway\Setup;
 use Drupal\decionis_commerce\Gateway\Tier;
 use Drupal\Tests\decionis_commerce\Support\RecordingRunner;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
 /**
  * Tests AgentSafe using generated gateway configuration and a Fincra double.
@@ -21,6 +22,7 @@ use Drupal\Tests\decionis_commerce\Support\RecordingRunner;
  *
  * @group decionis
  */
+#[RunTestsInSeparateProcesses]
 final class AgentSafeTest extends DecionisCommerceTestBase {
 
   private const SECRET = 'fixture-fincra-held-by-agentsafe';

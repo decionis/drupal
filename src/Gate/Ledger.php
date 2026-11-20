@@ -10,6 +10,7 @@ use Decionis\Client\Decision\Decision as Answer;
 use Drupal\Core\Database\Connection;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\decionis\Database\Commit;
 use Drupal\decionis\Entity\Decision;
 use Psr\Log\LoggerInterface;
 
@@ -271,9 +272,10 @@ final class Ledger {
     catch (IntegrityConstraintViolationException) {
       // A competing insert of this exact policy already became canonical.
       $transaction->rollBack();
+      $transaction = NULL;
     }
     finally {
-      unset($transaction);
+      Commit::transaction($transaction);
     }
     $matches = $storage->loadByProperties(['replay_key' => $fields['replay_key']]);
     $entry = reset($matches);

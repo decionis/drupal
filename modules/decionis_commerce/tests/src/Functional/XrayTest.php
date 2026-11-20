@@ -10,12 +10,14 @@ use Drupal\commerce_price\Price;
 use Drupal\commerce_product\Entity\ProductVariation;
 use Drupal\decionis_commerce\Report\Xray;
 use Drupal\Tests\commerce\Functional\CommerceBrowserTestBase;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
 /**
  * First-run X-ray over HTTP, without an account or an answering API.
  *
  * @group decionis
  */
+#[RunTestsInSeparateProcesses]
 final class XrayTest extends CommerceBrowserTestBase {
 
   /**

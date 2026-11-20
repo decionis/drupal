@@ -14,7 +14,9 @@ use Decionis\Client\Error\DecionisException;
  *
  * Shadow logs and runs. Enforce acts on the verdict. Checkout is
  * never held for a person and fails open; other actions follow their failure
- * policy when there is no decision.
+ * policy when there is no decision. Decionis Commerce safe mode applies to
+ * live actions: a halt refuses them without a verdict, and Shadow keeps a verdict
+ * from blocking while money out still fails closed without a decision.
  */
 final class Gate {
 
@@ -41,6 +43,7 @@ final class Gate {
     private readonly Ledger $ledger,
     private readonly ?Holds $holds = NULL,
     private readonly ?Deferred $deferred = NULL,
+    private readonly ?SafeMode $safeMode = NULL,
   ) {}
 
   /**
@@ -129,7 +132,15 @@ final class Gate {
     if ($context->source === 'replay' && $this->scope !== NULL && $this->scope[4] !== $this->settings->connectionIdentity()) {
       return new Outcome('shadow', 'ungoverned', NULL, ['REPLAY_CONNECTION_CHANGED']);
     }
-    $outcome = new Outcome($context->mode ?? $this->settings->mode($context->action), 'not_covered', NULL, [$reason]);
+    $posture = $this->posture($context);
+    $mode = $context->mode ?? $this->settings->mode($context->action);
+    if ($posture === 'halt') {
+      // A halt refuses every governed action, with or without the facts.
+      $outcome = new Outcome($mode, 'blocked', NULL, [SafeMode::HALT_REASON]);
+    }
+    else {
+      $outcome = new Outcome($posture === 'shadow' ? 'shadow' : $mode, 'not_covered', NULL, [$reason]);
+    }
     return $outcome->logged($this->ledger->record(NULL, $context, $outcome, $this->authority()->label(), NULL, NULL, $this->policy(), $this->scope[5] ?? NULL));
   }
 
@@ -175,14 +186,25 @@ final class Gate {
       return new Outcome('shadow', 'ungoverned', NULL, ['REPLAY_CONNECTION_CHANGED']);
     }
     $authority = $this->authority();
-    $mode = $context->mode ?? $this->settings->mode($context->action);
-    if ($this->scope === NULL && $context->source === 'live' && $mode === 'shadow' && $this->deferred !== NULL) {
+    $chosen = $context->mode ?? $this->settings->mode($context->action);
+    $posture = $this->posture($context);
+    if ($posture === 'halt') {
+      // Safe mode's halt: refused without asking for a verdict, in any mode.
+      $outcome = new Outcome($chosen, 'blocked', NULL, [SafeMode::HALT_REASON]);
+      return $outcome->logged($this->ledger->record($action, $context, $outcome, $authority->label(), NULL, NULL, $this->policy()));
+    }
+    // Safe mode's Shadow evaluates and never blocks. Money out that would be
+    // enforced is still asked inline, so no decision still fails closed (D2).
+    $overridden = $posture === 'shadow' && $chosen === 'enforce';
+    $moneyOut = $overridden && in_array($context->action, SafeMode::MONEY_OUT, TRUE);
+    $mode = $posture === 'shadow' ? 'shadow' : $chosen;
+    if ($this->scope === NULL && $context->source === 'live' && $mode === 'shadow' && $this->deferred !== NULL && !$moneyOut) {
       return $this->defer($action, $context->as('shadow', $context->source));
     }
     $answer = NULL;
     // No decision, for whatever reason, follows the action's failure policy:
     // checkout always runs, other actions in Enforce default to held.
-    $closed = $mode === 'enforce' && !$context->checkout && $this->settings->failure($context->action) === 'closed';
+    $closed = ($mode === 'enforce' || $moneyOut) && !$context->checkout && $this->settings->failure($context->action) === 'closed';
     if (!$authority->available()) {
       $outcome = new Outcome($mode, $closed ? 'failed_closed' : 'ungoverned', NULL, ['NOT_CONNECTED']);
     }
@@ -206,6 +228,9 @@ final class Gate {
       // Do not relabel it with the workspace that has since connected.
       return new Outcome('shadow', 'ungoverned', NULL, ['REPLAY_CONNECTION_CHANGED']);
     }
+    if ($overridden) {
+      $outcome = new Outcome($outcome->mode, $outcome->effect, $outcome->verdict, [...$outcome->reasons, SafeMode::SHADOW_REASON], $outcome->dossierId);
+    }
     if ($outcome->effect === 'held' && ($this->holds === NULL || !$this->holds->supports($context->action))) {
       // Nothing can run this action once approved, so holding it would only
       // stall it: in Enforce an ESCALATE without an approval path refuses.
@@ -223,6 +248,18 @@ final class Gate {
       }
     }
     return $outcome->logged($logId, $holdId);
+  }
+
+  /**
+   * The safe-mode posture for a live, unscoped action; NULL otherwise.
+   *
+   * The sandbox and replay run in their own scope and are never affected.
+   */
+  private function posture(Context $context): ?string {
+    if ($this->safeMode === NULL || $this->scope !== NULL || $context->source !== 'live') {
+      return NULL;
+    }
+    return $this->safeMode->posture();
   }
 
   /**

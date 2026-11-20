@@ -18,7 +18,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  */
 #[QueueWorker(
   id: 'decionis_replay',
-  title: new TranslatableMarkup('Commerce Gate 90-day replay'),
+  title: new TranslatableMarkup('Decionis Commerce 90-day replay'),
   cron: ['time' => 30],
 )]
 final class ReplayWorker extends QueueWorkerBase implements ContainerFactoryPluginInterface {

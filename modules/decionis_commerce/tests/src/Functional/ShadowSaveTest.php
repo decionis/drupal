@@ -13,12 +13,14 @@ use Drupal\decionis\Gate\Settings;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\Tests\commerce\Functional\CommerceBrowserTestBase;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
 /**
  * A real Shadow price form saves immediately and nudges its admin next load.
  *
  * @group decionis
  */
+#[RunTestsInSeparateProcesses]
 final class ShadowSaveTest extends CommerceBrowserTestBase {
 
   /**
@@ -71,7 +73,7 @@ final class ShadowSaveTest extends CommerceBrowserTestBase {
 
     \Drupal::service(Deferred::class)->process((int) $entry->id());
     $this->drupalGet('/admin/commerce/config/decionis');
-    $this->assertSession()->pageTextContains('Commerce Gate would have blocked this price: SKU-2 now sells 4% below cost.');
+    $this->assertSession()->pageTextContains('Decionis Commerce would have blocked this price: SKU-2 now sells 4% below cost.');
     $this->drupalGet('/admin/commerce/config/decionis');
     $this->assertSession()->pageTextNotContains('now sells 4% below cost');
   }

@@ -9,12 +9,14 @@ use Drupal\commerce_product\Entity\Product;
 use Drupal\commerce_product\Entity\ProductVariation;
 use Drupal\decionis_commerce\Report\Coverage;
 use Drupal\Tests\commerce\Functional\CommerceBrowserTestBase;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
 /**
  * A merchant can enter cost on the ordinary product variation form.
  *
  * @group decionis
  */
+#[RunTestsInSeparateProcesses]
 final class CostsTest extends CommerceBrowserTestBase {
 
   /**

@@ -17,6 +17,7 @@ use Drupal\decionis_commerce\Hook\CommerceHooks;
 use Drupal\decionis_commerce\Map\Actions;
 use Drupal\decionis_commerce\Map\Attempts;
 use Drupal\decionis_commerce\Map\Cost;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Session\Session;
 use Symfony\Component\HttpFoundation\Session\Storage\MockArraySessionStorage;
@@ -28,6 +29,7 @@ use Symfony\Component\HttpFoundation\Session\Storage\MockArraySessionStorage;
  *
  * @group decionis
  */
+#[RunTestsInSeparateProcesses]
 final class SignalsTest extends DecionisCommerceTestBase {
 
   /**
